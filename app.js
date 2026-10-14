@@ -251,13 +251,19 @@ function renderSeg() {
   seg.innerHTML = "";
   seg.classList.toggle("hidden", ALL().length < 2);
   if (ALL().length < 2) return;
+  pickButtons(seg, selectSentence);
+}
+
+// 공용 수평 스크롤 문장 선택기: 듣기 세그먼트·폼·기록이 공유
+function pickButtons(box, onpick) {
+  box.innerHTML = "";
   ALL().forEach((item, i) => {
     const done = (PROG[item.id || ("ix" + i)] || {}).pass >= 6;
     const b = h("button", `pick${i === state.sentence ? " is-on" : ""}`, `문장 0${i + 1}${done ? " ✓" : ""}`);
     b.type = "button";
     b.title = item.text;
-    b.addEventListener("click", () => selectSentence(i));
-    seg.append(b);
+    b.addEventListener("click", () => onpick(i));
+    box.append(b);
   });
 }
 
@@ -275,15 +281,7 @@ function renderForm() {
   }
   const s = S();
   const picker = $("sentence-picker");
-  picker.innerHTML = "";
-  ALL().forEach((item, i) => {
-    const done = (PROG[item.id || ("ix" + i)] || {}).pass >= 6;
-    const b = h("button", `pick${i === state.sentence ? " is-on" : ""}`, `문장 0${i + 1}${done ? " ✓" : ""}`);
-    b.type = "button";
-    b.title = item.text;
-    b.addEventListener("click", () => selectSentence(i));
-    picker.append(b);
-  });
+  pickButtons(picker, selectSentence);
   const full = h("p", "form-full", s.text);
   box.append(full);
   s.chunks.forEach((c, i) => {
@@ -337,10 +335,18 @@ function renderHistory() {
     h("p", "hist-hero-date", st.firstPassAt ? new Date(st.firstPassAt).toLocaleString() + " 🎉" : "아직 없어요. 첫 소리를 내보세요")
   );
   box.append(hero);
-  // 문장별 카드: 미니 도트 + 완료일
+  // 기록 탭 수평 선택기: 고르면 해당 카드 하이라이트+스크롤
+  pickButtons($("history-picker"), (i) => {
+    selectSentence(i);
+    requestAnimationFrame(() => {
+      const cards = document.querySelectorAll("#history-body .sent-card");
+      if (cards[i]) cards[i].scrollIntoView({ block: "nearest" });
+    });
+  });
+  // 문장별 카드: 미니 도트 + 완료일 (선택 문장 하이라이트)
   ALL().forEach((item, i) => {
     const p = PROG[item.id || ("ix" + i)] || {};
-    const card = h("div", "sent-card");
+    const card = h("div", "sent-card" + (i === state.sentence ? " is-on" : ""));
     card.append(h("p", "sent-text", (item.text || "").slice(0, 24) + "…"));
     const dots = h("div", "mini-dots");
     for (let d = 0; d < 6; d++) dots.append(h("span", `mini-dot${d < (p.pass || 0) ? " is-on" : ""}`));

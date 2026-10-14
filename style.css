@@ -89,8 +89,8 @@ h1 { font-size: 18px; margin-top: 4px; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } .cmd-btn.is-next { animation: none; } }
 /* 형태 */
-.picker { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-.pick { border: 1px solid #333; background: #1c1c21; color: #999; border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; }
+.picker { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.pick { flex: 0 0 auto; border: 1px solid #333; background: #1c1c21; color: #999; border-radius: 20px; padding: 8px 18px; font-size: 13px; cursor: pointer; scroll-snap-align: start; }
 .pick.is-on { border-color: #7dd3a8; color: #7dd3a8; }
 .form-full { font-size: 19px; font-weight: 700; line-height: 1.4; margin-bottom: 12px; }
 .form-card { position: relative; display: block; width: 100%; text-align: left; background: #1c1c21; border: 1px solid #2a2a30; border-radius: 14px; padding: 14px 14px 14px 44px; margin-bottom: 8px; cursor: pointer; color: #fff; }
@@ -118,6 +118,8 @@ h1 { font-size: 18px; margin-top: 4px; }
 .hist-hero { background: linear-gradient(135deg, #0B2911, #1c1c21); border: 1px solid #2ecc71; border-radius: 14px; padding: 16px; margin-bottom: 10px; }
 .hist-hero-date { font-size: 15px; font-weight: 700; margin-top: 6px; }
 .sent-card { background: #1c1c21; border: 1px solid #2a2a30; border-radius: 14px; padding: 14px; margin-bottom: 8px; cursor: pointer; }
+.sent-card.is-on { border-color: #7dd3a8; }
+.hist-sec { border-top: 1px solid #2a2a30; padding-top: 14px; }
 .sent-text { font-size: 14px; font-weight: 700; line-height: 1.4; }
 .mini-dots { display: flex; gap: 6px; margin: 10px 0 6px; }
 .mini-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #555; }

@@ -7,7 +7,7 @@ const SENTENCES = [];
 
 const COMMAND_TEXT = { idle: "Let's play it now", tts: "재생 중입니다", train: "Let's train it now", stt: "문장을 소리 내어 말해보세요", mastered: "아래 5가지 톤을 눌러보세요" };
 const LABELS = { idle: "학습자 명령어 듣기 대기중...", tts: "티티엣이 말한다...", train: "뒤에서부터 소리를 잇는 중...", stt: "안 보고 말하기 테스트 중...", mastered: "여섯 번의 소리가 연결됐어요" };
-const VIEW_TITLES = { listen: "듣기연습", form: "형태", history: "기록", me: "내정보" };
+const VIEW_TITLES = { listen: "듣기연습", form: "폼", history: "기록", me: "내정보" };
 const PATTERNS = [
   { command: "play", pattern: /\b(pl[ae]y|플레이|pray|plei)\b/ },
   { command: "train", pattern: /\b(tr[ae]in|트레인|drain|crain)\w*\b/ },
@@ -246,11 +246,38 @@ function renderForm() {
     card.type = "button"; card.className = "form-card";
     card.innerHTML = `<span class="step-badge">0${i + 1}</span>`;
     const t = document.createElement("p"); t.className = "form-text"; t.textContent = c.text;
-    const ipa = document.createElement("p"); ipa.className = "ipa"; ipa.textContent = c.ipa || "";
     const hint = document.createElement("p"); hint.className = "form-hint"; hint.textContent = c.hint || "";
-    card.append(t, ipa, hint);
+    card.append(t, hint);
     card.addEventListener("click", () => void speak(c.text, { rate: state.slow ? 0.65 : 0.85 }));
     box.append(card);
+  });
+  renderCCQ(s);
+}
+
+function renderCCQ(s) {
+  const sec = $("ccq-sec"), list = $("ccq-list");
+  const items = Array.isArray(s.ccq) ? s.ccq : [];
+  sec.classList.toggle("hidden", items.length === 0);
+  list.innerHTML = "";
+  if (!items.length) return;
+  let score = 0, done = 0;
+  const scoreEl = $("ccq-score");
+  scoreEl.textContent = `0/${items.length} 맞춤`;
+  items.forEach((q) => {
+    const card = document.createElement("div"); card.className = "ccq-card";
+    const t = document.createElement("p"); t.className = "ccq-q"; t.textContent = q.q;
+    const row = document.createElement("div"); row.className = "ccq-row";
+    const yes = document.createElement("button"); yes.type = "button"; yes.className = "ccq-ans"; yes.textContent = "예";
+    const no = document.createElement("button"); no.type = "button"; no.className = "ccq-ans"; no.textContent = "아니오";
+    const mark = (btn, ok) => {
+      btn.classList.add(ok ? "is-yes" : "is-no");
+      yes.disabled = true; no.disabled = true;
+      done++; if (ok) score++;
+      scoreEl.textContent = done >= items.length ? (score === items.length ? `전부 맞춤! 🎉 (${score}/${items.length})` : `${score}/${items.length} 맞춤`) : `${score}/${items.length} 맞춤`;
+    };
+    yes.addEventListener("click", () => mark(yes, q.a === "yes"));
+    no.addEventListener("click", () => mark(no, q.a === "no"));
+    row.append(yes, no); card.append(t, row); list.append(card);
   });
 }
 
@@ -520,10 +547,12 @@ function parseMD(src) {
   let text = "", ipa = "";
   const chunks = [];
   let tones = [];
+  let ccq = [];
   let cur = null;
   const flush = () => {
     if (!cur) return;
     if (cur.section === "tones") tones = cur.items;
+    else if (cur.section === "ccq") ccq = cur.items;
     else if (cur.text) chunks.push(cur);
     cur = null;
   };
@@ -536,6 +565,9 @@ function parseMD(src) {
       if (cur.section === "tones") {
         const parts = ln.split("|").map((x) => x.trim()).filter((x) => x);
         if (parts.length >= 6) cur.items.push({ key: parts[0], emoji: parts[1], label: parts[2], pitch: parseFloat(parts[3]) || 1, rate: parseFloat(parts[4]) || 1, text: parts.slice(5).join("|").trim() });
+      } else if (cur.section === "ccq") {
+        const m = ln.match(/^(yes|no)\s*\|\s*(.+)$/i);
+        if (m) cur.items.push({ a: m[1].toLowerCase(), q: m[2].trim() });
       } else {
         const m = ln.match(/^(text|ipa|hint|image):\s*(.*)$/);
         if (m) cur[m[1]] = m[2].trim();
@@ -544,7 +576,7 @@ function parseMD(src) {
   }
   flush();
   if (!text || chunks.length === 0) return null;
-  return { id: meta.id || ("md_" + Date.now()), level: meta.level || "beginner", text, ipa, chunks, tones };
+  return { id: meta.id || ("md_" + Date.now()), level: meta.level || "beginner", text, ipa, chunks, tones, ccq };
 }
 
 function validPack(obj) {
@@ -563,6 +595,7 @@ function canonicalEntries(entries) {
     id: e.id || "", text: e.text, ipa: e.ipa || "",
     chunks: e.chunks.map((c) => ({ text: c.text, ipa: c.ipa || "", hint: c.hint || "", image: c.image || "" })),
     tones: Array.isArray(e.tones) ? e.tones : [],
+    ccq: Array.isArray(e.ccq) ? e.ccq.map((q) => ({ a: q.a, q: q.q })) : [],
   })));
 }
 

@@ -3,7 +3,7 @@
   "version": 1,
   "name": "target-01",
   "title": "타겟표현01",
-  "created": "2026-10-14T12:22:12.852Z",
+  "created": "2026-10-14T13:11:03.665Z",
   "entries": [
     {
       "id": "roald_dahl_chunk_01",
@@ -74,8 +74,22 @@
           "rate": 0.82,
           "text": "Oh, sure... I would have been able to make it into a grubber all over again..."
         }
+      ],
+      "ccq": [
+        {
+          "a": "no",
+          "q": "Is there a new bakery now?"
+        },
+        {
+          "a": "yes",
+          "q": "Is it about changing something into a bakery?"
+        },
+        {
+          "a": "yes",
+          "q": "Is it about starting one more time from the beginning?"
+        }
       ]
     }
   ],
-  "sha256": "c15556a86d4ee2b70de03f4621b5ee1c52ca8b2b3dd68385c259fa1cb37e6fa7"
+  "sha256": "c41b5953136bf302f294bce9c57a20343b15982daad656684612c7ff9870d3d8"
 }

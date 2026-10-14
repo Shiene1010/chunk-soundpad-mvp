@@ -32,3 +32,9 @@ interrogative | ❓ | 의문 | 1.12 | 0.95 | Would I have been able to make it i
 exclamatory | 🔥 | 감탄 | 1.15 | 1.05 | Yes! I would have been able to make it into a grubber all over again!
 surprised | 😲 | 놀람 | 1.25 | 1.15 | Oh my! I would have been able to make it into a grubber all over again?!
 sarcastic | 😏 | 비꼼 | 0.85 | 0.82 | Oh, sure... I would have been able to make it into a grubber all over again...
+
+## ccq
+
+no | Is there a new bakery now?
+yes | Is it about changing something into a bakery?
+yes | Is it about starting one more time from the beginning?

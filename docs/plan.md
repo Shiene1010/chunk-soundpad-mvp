@@ -27,6 +27,7 @@
 - **D23 컴포넌트 체계**: `h()` 팩토리로 동적 뷰 통일. 컨테이너(AppShell/TabView)+베이스(카드·행·도트·토스트) 카탈로그는 UI 스킬 §8.
 - **D24 2호팩 게시**: 빌더 target-02 → `libraries/` manifest 최신 로드. manifest+raw 이중 경로. canonical 바이트 일치(python `separators+ensure_ascii`+`js_num`).
 - **D25 문장별 진도**: `cspm-progress-v1` 맵(pass·didPlay·didTrain/문장). 듣기뷰 세그먼트 전환, 폼 ✓, 기록 완료수. `resume()` 1.5s 상한(무한대기 방지).
+- **D26 기록·내정보 개편**: 기록=첫말하기 히어로+문장 카드(탭 이동)+푸터. 내정보=섹션 헤더+라이브러리 단일 카드+설정 부제. 완료일 저장.
 - **D14 제작 스킬**: `docs/skills/expression-library.md` (포맷·청킹·IPA·검증·QA). 초안은 `/tmp`에만, `expressions/` 단일원칙 유지.
 - **D15 듣기탭 소리전용**: 타겟보드 제거. 훈련 스텝은 cue 한 줄, 빈 상태는 CTA.
 

@@ -111,6 +111,18 @@ h1 { font-size: 18px; margin-top: 4px; }
 .hist-row { display: flex; justify-content: space-between; align-items: center; background: #1c1c21; border: 1px solid #2a2a30; border-radius: 12px; padding: 12px 14px; font-size: 13px; color: #bbb; margin-bottom: 8px; }
 .hist-row b { color: #fff; }
 .set-row { display: flex; justify-content: space-between; align-items: center; background: #1c1c21; border: 1px solid #2a2a30; border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 8px; }
+.set-row span { display: flex; flex-direction: column; gap: 2px; }
+.set-sub { font-size: 11px; color: #777; }
+.lib-card { background: #1c1c21; border: 1px solid #2a2a30; border-radius: 14px; padding: 14px; }
+.lib-card #pack-list { margin: 10px 0; }
+.hist-hero { background: linear-gradient(135deg, #0B2911, #1c1c21); border: 1px solid #2ecc71; border-radius: 14px; padding: 16px; margin-bottom: 10px; }
+.hist-hero-date { font-size: 15px; font-weight: 700; margin-top: 6px; }
+.sent-card { background: #1c1c21; border: 1px solid #2a2a30; border-radius: 14px; padding: 14px; margin-bottom: 8px; cursor: pointer; }
+.sent-text { font-size: 14px; font-weight: 700; line-height: 1.4; }
+.mini-dots { display: flex; gap: 6px; margin: 10px 0 6px; }
+.mini-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #555; }
+.mini-dot.is-on { background: #7dd3a8; border-color: #7dd3a8; }
+.sent-date { font-size: 11px; color: #777; }
 .toggle { border: 1px solid #2ecc71; background: none; color: #2ecc71; border-radius: 20px; padding: 4px 16px; font-size: 13px; cursor: pointer; }
 .toggle[aria-pressed="false"] { border-color: #444; color: #777; }
 .lib-title { font-size: 14px; margin: 20px 0 10px; }

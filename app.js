@@ -30,7 +30,11 @@ let PROG = {};
 try { PROG = JSON.parse(localStorage.getItem(PROG_KEY)) || {}; } catch { PROG = {}; }
 function progKey() { const s = S(); return (s && s.id) || ("ix" + state.sentence); }
 function saveProg() {
-  PROG[progKey()] = { pass: state.pass, didPlay: state.didPlay, didTrain: state.didTrain };
+  const prev = PROG[progKey()] || {};
+  PROG[progKey()] = {
+    pass: state.pass, didPlay: state.didPlay, didTrain: state.didTrain,
+    completedAt: prev.completedAt || (state.pass >= 6 ? new Date().toISOString() : undefined),
+  };
   try { localStorage.setItem(PROG_KEY, JSON.stringify(PROG)); } catch { /* noop */ }
 }
 function loadProg() {
@@ -326,19 +330,29 @@ function renderHistory() {
   const st = loadStats();
   const box = $("history-body");
   box.innerHTML = "";
-  const doneCount = ALL().filter((item, i) => ((PROG[item.id || ("ix" + i)] || {}).pass || 0) >= 6).length;
-  const rows = [
-    ["첫 말하기", st.firstPassAt ? new Date(st.firstPassAt).toLocaleString() + " 🎉" : "아직 없어요. 첫 소리를 내보세요"],
-    ["통산 발화", String(st.totalPasses || 0) + "회"],
-    ["세션", String(st.sessions || 0) + "회"],
-    ["완료 문장", `${doneCount}/${ALL().length}문장`],
-  ];
-  rows.forEach(([k, v]) => {
-    const r = h("div", "hist-row");
-    const a = h("span", null, k);
-    const b = h("b", null, v);
-    r.append(a, b); box.append(r);
+  // 첫말하기 하이라이트 카드
+  const hero = h("div", "hist-hero");
+  hero.append(
+    h("p", "kicker", "첫 말하기"),
+    h("p", "hist-hero-date", st.firstPassAt ? new Date(st.firstPassAt).toLocaleString() + " 🎉" : "아직 없어요. 첫 소리를 내보세요")
+  );
+  box.append(hero);
+  // 문장별 카드: 미니 도트 + 완료일
+  ALL().forEach((item, i) => {
+    const p = PROG[item.id || ("ix" + i)] || {};
+    const card = h("div", "sent-card");
+    card.append(h("p", "sent-text", (item.text || "").slice(0, 24) + "…"));
+    const dots = h("div", "mini-dots");
+    for (let d = 0; d < 6; d++) dots.append(h("span", `mini-dot${d < (p.pass || 0) ? " is-on" : ""}`));
+    card.append(dots);
+    card.append(h("p", "sent-date", (p.pass || 0) >= 6 && p.completedAt ? new Date(p.completedAt).toLocaleDateString() + " 완료" : `진행 ${(p.pass || 0)}/6`));
+    card.addEventListener("click", () => { selectSentence(i); showView("listen"); });
+    box.append(card);
   });
+  // 통산 푸터
+  const doneCount = ALL().filter((item, i) => ((PROG[item.id || ("ix" + i)] || {}).pass || 0) >= 6).length;
+  const foot = h("p", "tone-note", `통산 ${st.totalPasses || 0}회 · 세션 ${st.sessions || 0}회 · 완료 ${doneCount}/${ALL().length}문장`);
+  box.append(foot);
 }
 
 function renderMe() {

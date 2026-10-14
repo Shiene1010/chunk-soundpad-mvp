@@ -78,12 +78,15 @@
 
 <section class="view hidden" id="view-me" aria-label="내정보">
 <div class="view-head"><h2>내정보</h2><p class="view-sub">설정과 표현 라이브러리</p></div>
-<div class="set-row"><span>느리게 듣기</span><button type="button" id="set-slow" class="toggle" aria-pressed="false">끔</button></div>
-<div class="set-row"><span>음성 안내</span><button type="button" id="set-guide" class="toggle" aria-pressed="true">켬</button></div>
+<h3 class="lib-title">설정</h3>
+<div class="set-row"><span>느리게 듣기<small class="set-sub">문장 속도 0.65</small></span><button type="button" id="set-slow" class="toggle" aria-pressed="false">끔</button></div>
+<div class="set-row"><span>음성 안내<small class="set-sub">시작·결과 음성</small></span><button type="button" id="set-guide" class="toggle" aria-pressed="true">켬</button></div>
 <h3 class="lib-title">표현 라이브러리</h3>
+<div class="lib-card">
 <p class="tone-note" id="lib-status"></p>
 <div id="pack-list"></div>
 <button type="button" id="btn-get-expressions" class="manual">표현 가져오기</button>
+</div>
 </section>
 
 <div id="toast" class="toast hidden" role="status"></div>

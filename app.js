@@ -2,25 +2,8 @@
 // Static, no build. Browser-native Web Speech + Web Audio only.
 "use strict";
 
-const SENTENCES = [
-  {
-    id: "roald_dahl_chunk_01",
-    text: "I would have been able to make it into a grubber all over again.",
-    ipa: "[aɪ wʊd həv bɪn ˈeɪbəl tu meɪk ɪt ˈɪntu ə ˈɡrʌbər ɔːl ˈoʊvər əˈɡen]",
-    chunks: [
-      { text: "I would have been able to", ipa: "[aɪ wʊd həv bɪn ˈeɪbəl tu]", hint: "내가 ~할 수 있었을 텐데 (호흡 시작 마디)" },
-      { text: "make it into a grubber", ipa: "[meɪk ɪt ˈɪntu ə ˈɡrʌbər]", hint: "그것을 제과점으로 변모시키는 것을 (동사부 연결마디)" },
-      { text: "all over again.", ipa: "[ɔːl ˈoʊvər əˈɡen]", hint: "처음부터 완전히 다시 (억양 매듭마디)" },
-    ],
-    tones: [
-      { key: "declarative", emoji: "😐", label: "평서", pitch: 1, rate: 1 },
-      { key: "interrogative", emoji: "❓", label: "의문", pitch: 1.12, rate: 0.95, text: "Would I have been able to make it into a grubber all over again?" },
-      { key: "exclamatory", emoji: "🔥", label: "감탄", pitch: 1.15, rate: 1.05, text: "Yes! I would have been able to make it into a grubber all over again!" },
-      { key: "surprised", emoji: "😲", label: "놀람", pitch: 1.25, rate: 1.15, text: "Oh my! I would have been able to make it into a grubber all over again?!" },
-      { key: "sarcastic", emoji: "😏", label: "비꼼", pitch: 0.85, rate: 0.82, text: "Oh, sure... I would have been able to make it into a grubber all over again..." },
-    ],
-  },
-];
+// 내장 문장 없음(폴더 우선). 첫 실행은 비어 있음 → [표현 가져오기]로 로드
+const SENTENCES = [];
 
 const COMMAND_TEXT = { idle: "Let's play it now", tts: "재생 중입니다", train: "Let's train it now", stt: "문장을 소리 내어 말해보세요", mastered: "아래 5가지 톤을 눌러보세요" };
 const LABELS = { idle: "학습자 명령어 듣기 대기중...", tts: "티티엣이 말한다...", train: "뒤에서부터 소리를 잇는 중...", stt: "안 보고 말하기 테스트 중...", mastered: "여섯 번의 소리가 연결됐어요" };
@@ -52,7 +35,14 @@ try { PACKS = loadPacks(); } catch { PACKS = []; }
 const ALL = () => SENTENCES.concat(PACKS);
 
 const $ = (id) => document.getElementById(id);
-const S = () => ALL()[state.sentence] || SENTENCES[0];
+const S = () => ALL()[state.sentence] || { text: "", ipa: "", chunks: [], tones: [] };
+const hasSentence = () => Boolean(S().text);
+function needSentence() {
+  if (hasSentence()) return false;
+  showToast("표현을 먼저 가져오세요");
+  showView("me");
+  return true;
+}
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function matchCommand(t) {
@@ -174,7 +164,7 @@ function render() {
   $("pip").className = `pip${state.mode === "stt" || state.listening ? " is-live" : ""}`;
   $("status").textContent = state.listening ? "듣고 있어요... 말씀하세요" : LABELS[state.mode];
   $("tap-hint").style.display = state.mode === "idle" && !state.listening ? "" : "none";
-  $("target-label").textContent = `Target / 0${state.sentence + 1}`;
+  $("target-label").textContent = hasSentence() ? `Target / 0${state.sentence + 1}` : "Target / -";
   $("chunk-board").classList.toggle("is-blind", state.mode === "stt");
   $("blind-cover").classList.toggle("hidden", state.mode !== "stt");
   $("pass-num").textContent = String(state.pass);
@@ -208,7 +198,17 @@ function render() {
   const body = $("board-body");
   body.innerHTML = "";
   const steps = backwardSteps();
-  if (!revealed && state.step !== null && steps[state.step]) {
+  if (!hasSentence()) {
+    // 빈 시작: 표현 없이 실행, 가져오기 유도
+    const cover = document.createElement("p");
+    cover.className = "cover-line";
+    cover.textContent = "표현이 없어요. 먼저 가져오세요";
+    const go = document.createElement("button");
+    go.type = "button"; go.className = "manual"; go.textContent = "표현 가져오러 가기";
+    go.addEventListener("click", () => showView("me"));
+    const box = document.createElement("div");
+    box.append(cover, go); body.append(box);
+  } else if (!revealed && state.step !== null && steps[state.step]) {
     // 블라인드 퍼스트: 훈련 중에도 영어 텍스트·IPA 미공개, 단계+한글 힌트만
     const s = steps[state.step];
     const tag = document.createElement("div");
@@ -272,6 +272,18 @@ function render() {
 }
 
 function renderForm() {
+  const box = $("form-cards");
+  box.innerHTML = "";
+  if (!hasSentence()) {
+    const p = document.createElement("p");
+    p.className = "cover-line"; p.textContent = "표현이 없어요. 먼저 가져오세요";
+    const go = document.createElement("button");
+    go.type = "button"; go.className = "manual"; go.textContent = "표현 가져오러 가기";
+    go.addEventListener("click", () => showView("me"));
+    box.append(p, go);
+    $("sentence-picker").innerHTML = "";
+    return;
+  }
   const s = S();
   const picker = $("sentence-picker");
   picker.innerHTML = "";
@@ -284,8 +296,6 @@ function renderForm() {
     b.addEventListener("click", () => { state.sentence = i; state.pass = 0; state.step = null; state.didPlay = false; state.didTrain = false; state.peeked = false; if (state.mode !== "idle") { stopRec(); state.mode = "idle"; } render(); });
     picker.append(b);
   });
-  const box = $("form-cards");
-  box.innerHTML = "";
   const full = document.createElement("p");
   full.className = "form-full"; full.textContent = s.text;
   box.append(full);
@@ -449,6 +459,7 @@ function startTestRec() {
 }
 
 async function playSentence() {
+  if (needSentence()) return;
   stopRec();
   state.mode = "tts"; state.step = null; say("전체 문장을 들려드릴게요"); render();
   await ensureAudio(); await delay(500);
@@ -459,6 +470,7 @@ async function playSentence() {
 }
 
 async function trainBackward() {
+  if (needSentence()) return;
   stopRec();
   state.mode = "train"; say("마지막 소리부터 앞으로 붙입니다"); render();
   const steps = backwardSteps();
@@ -472,6 +484,7 @@ async function trainBackward() {
 }
 
 async function beginTest() {
+  if (needSentence()) return;
   stopRec();
   state.mode = "stt"; state.step = null;
   say("틀려도 돼요. 들은 대로 말해보세요"); render();

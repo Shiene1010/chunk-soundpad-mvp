@@ -23,7 +23,12 @@ let restarting = false;
 const err = { nospeech: 0, net: 0 };
 // TTS 자기 목소리 오인식 방지: 앱이 말한 단어는 패스로 치지 않음
 const SELF_VOICE = ["one", "two", "three", "four", "five", "six", "well done", "well done you did it"];
+// 분석은 수업을 깨지 않는다: 원본 Lovable과 동일 속성·이벤트
 // 북극성 지표 저장소 (기록 탭 재료): firstPassAt, totalPasses, sessions
+function trackEvent(name, params) {
+  if (typeof window === "undefined") return;
+  try { window.gtag && window.gtag("event", name, params || {}); } catch { /* noop */ }
+}
 const STATS_KEY = "cspm-stats-v1";
 const PROG_KEY = "cspm-progress-v1";
 let PROG = {};
@@ -431,6 +436,7 @@ async function registerPass() {
   const first = state.pass === 1;
   say(first ? "🎉 첫 소리 성공! 틀려도 잘했어요" : `${state.pass}번째 소리를 받았어요`);
   render();
+  trackEvent("speech_pass_count", { pass_step: state.pass, sentence_id: S().id || "" });
   if (first) await seq([392, 523.25, 659.25], 120, 0.12); // 첫 발화 전용 팡파레 (TTS 아님: 자기인식 방지)
   await tone(1046.5, 300, 0.14);
   const w = WHISPERS[state.pass - 1];
@@ -438,6 +444,7 @@ async function registerPass() {
   if (state.pass === 6) {
     stopRec();
     state.mode = "mastered"; state.fallback = false;
+    trackEvent("hidden_reward_unlock", { reward_name: "five_tones", achievement: "completed_all_nodes" });
     render();
     await seq([523.25, 659.25, 784, 1046.5], 100, 0.14);
     await speak("Well done, you did it!", { pitch: 1.08, rate: 0.92 });
@@ -785,6 +792,7 @@ $("btn-manual").addEventListener("click", () => void registerPass());
 $("btn-go-import").addEventListener("click", () => showView("me"));
 document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
 $("btn-get-expressions").addEventListener("click", () => void loadBundled(true));
+$("cafe-link").addEventListener("click", () => trackEvent("click_to_daangn_cafe", {}));
 $("set-slow").addEventListener("click", () => { state.slow = !state.slow; render(); });
 $("set-guide").addEventListener("click", () => { state.guideVoice = !state.guideVoice; render(); });
 $("btn-clear-stats").addEventListener("click", () => { try { localStorage.removeItem(STATS_KEY); } catch { /* noop */ } render(); });

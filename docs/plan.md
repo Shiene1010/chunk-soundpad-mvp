@@ -25,6 +25,7 @@
 - **D21 폼 CCQ**: 청크 카드 IPA 제거·폼 탭 개명·헤더/탭바 고정. `## ccq` 3문항(예/아니오) + 펑션 섹션. CCQ 에이전트 작성.
 - **D22 탭바 고정**: sticky → fixed 하단(420px 중앙) + 본문 하단 여백. 헤더 sticky 유지.
 - **D23 컴포넌트 체계**: `h()` 팩토리로 동적 뷰 통일. 컨테이너(AppShell/TabView)+베이스(카드·행·도트·토스트) 카탈로그는 UI 스킬 §8.
+- **D24 2호팩 게시**: 빌더 target-02 → `libraries/` manifest 최신 로드. manifest+raw 이중 경로. canonical 바이트 일치(python `separators+ensure_ascii`+`js_num`).
 - **D14 제작 스킬**: `docs/skills/expression-library.md` (포맷·청킹·IPA·검증·QA). 초안은 `/tmp`에만, `expressions/` 단일원칙 유지.
 - **D15 듣기탭 소리전용**: 타겟보드 제거. 훈련 스텝은 cue 한 줄, 빈 상태는 CTA.
 

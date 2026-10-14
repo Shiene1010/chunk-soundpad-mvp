@@ -594,13 +594,26 @@ async function verifyLibrary(obj) {
 }
 
 async function addLibraryEntries(entries, label) {
-  let added = 0;
-  for (const e of entries) {
-    if (!ALL().some((x) => x.text === e.text)) { PACKS.push(e); added++; }
-  }
-  if (added) { savePacks(PACKS); showToast(added + "개 가져옴" + (label ? ": " + label : "")); }
+  const changed = upsertEntries(entries);
+  if (changed) { savePacks(PACKS); showToast(changed + "개 가져옴" + (label ? ": " + label : "")); }
   else showToast("이미 있어요");
   render();
+}
+
+// 동일 문장은 tones·chunks·ipa를 새 데이터로 승격 (무톤 구데이터 자가치유)
+function upsertEntries(entries) {
+  let changed = 0;
+  for (const e of entries) {
+    const ix = PACKS.findIndex((x) => x.text === e.text);
+    if (ix < 0) { PACKS.push(e); changed++; continue; }
+    const cur = PACKS[ix];
+    const upgrade = (!cur.tones || !cur.tones.length) && e.tones && e.tones.length;
+    if (upgrade || cur.ipa !== e.ipa || (cur.chunks || []).length !== (e.chunks || []).length) {
+      PACKS[ix] = { ...cur, ...e, id: cur.id };
+      changed++;
+    }
+  }
+  return changed;
 }
 
 const BUNDLED_LIB = "expressions/sample-library.clib.json";
@@ -627,11 +640,11 @@ async function loadBundled(manual = false) {
     if (bad) return done("invalid", bad);
     const ierr = await verifyLibrary(lib);
     if (ierr) return done("invalid", ierr);
-    const fresh = lib.entries.filter((e) => !ALL().some((x) => x.text === e.text));
+    const upgraded = upsertEntries(lib.entries);
     storeSha(lib.sha256 || null);
-    if (!fresh.length) return done("uptodate", "최신 상태");
-    PACKS.push(...fresh); savePacks(PACKS);
-    return done("added", fresh.length + "개 가져옴");
+    if (!upgraded) return done("uptodate", "최신 상태");
+    savePacks(PACKS);
+    return done("added", upgraded + "개 가져옴");
   } catch {
     return done("failed", "폴더 읽기 실패: localhost:8080으로 여세요");
   }

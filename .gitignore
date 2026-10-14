@@ -1,0 +1,8 @@
+# template gitignore (MiniMorph scaffolding §4)
+.env
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+node_modules/

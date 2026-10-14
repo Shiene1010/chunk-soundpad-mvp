@@ -1,0 +1,332 @@
+// Chunk Sound Pad MVP — ported from Shiene1010/ayoung-ilgchunksoundpad src/routes/index.tsx
+// Static, no build. Browser-native Web Speech + Web Audio only.
+"use strict";
+
+const SENTENCES = [
+  {
+    id: "roald_dahl_chunk_01",
+    text: "I would have been able to make it into a grubber all over again.",
+    ipa: "[aɪ wʊd həv bɪn ˈeɪbəl tu meɪk ɪt ˈɪntu ə ˈɡrʌbər ɔːl ˈoʊvər əˈɡen]",
+    chunks: [
+      { text: "I would have been able to", ipa: "[aɪ wʊd həv bɪn ˈeɪbəl tu]", hint: "내가 ~할 수 있었을 텐데 (호흡 시작 마디)" },
+      { text: "make it into a grubber", ipa: "[meɪk ɪt ˈɪntu ə ˈɡrʌbər]", hint: "그것을 제과점으로 변모시키는 것을 (동사부 연결마디)" },
+      { text: "all over again.", ipa: "[ɔːl ˈoʊvər əˈɡen]", hint: "처음부터 완전히 다시 (억양 매듭마디)" },
+    ],
+    tones: [
+      { key: "declarative", emoji: "😐", label: "평서", pitch: 1, rate: 1 },
+      { key: "interrogative", emoji: "❓", label: "의문", pitch: 1.12, rate: 0.95, text: "Would I have been able to make it into a grubber all over again?" },
+      { key: "exclamatory", emoji: "🔥", label: "감탄", pitch: 1.15, rate: 1.05, text: "Yes! I would have been able to make it into a grubber all over again!" },
+      { key: "surprised", emoji: "😲", label: "놀람", pitch: 1.25, rate: 1.15, text: "Oh my! I would have been able to make it into a grubber all over again?!" },
+      { key: "sarcastic", emoji: "😏", label: "비꼼", pitch: 0.85, rate: 0.82, text: "Oh, sure... I would have been able to make it into a grubber all over again..." },
+    ],
+  },
+];
+
+const COMMAND_TEXT = { idle: "Let's play it now", tts: "재생 중입니다", train: "Let's train it now", stt: "문장을 소리 내어 말해보세요", mastered: "아래 5가지 톤을 눌러보세요" };
+const LABELS = { idle: "학습자 명령어 듣기 대기중...", tts: "티티엣이 말한다...", train: "뒤에서부터 소리를 잇는 중...", stt: "안 보고 말하기 테스트 중...", mastered: "여섯 번의 소리가 연결됐어요" };
+const PATTERNS = [
+  { command: "play", pattern: /\b(pl[ae]y|플레이|pray|plei)\b/ },
+  { command: "train", pattern: /\b(tr[ae]in|트레인|drain|crain)\w*\b/ },
+  { command: "test", pattern: /\b(te[sz]t|테스트|taste|text)\w*\b/ },
+];
+const WHISPERS = ["One", "Two", "Three", "Four", "Five", "Six"];
+
+const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false };
+let audioCtx = null;
+let rec = null;
+let restarting = false;
+
+const $ = (id) => document.getElementById(id);
+const S = () => SENTENCES[state.sentence];
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function matchCommand(t) {
+  const n = t.toLowerCase().replace(/[.,!?'"“”]/g, " ").replace(/\s+/g, " ").trim();
+  for (const { command, pattern } of PATTERNS) if (pattern.test(n)) return command;
+  return null;
+}
+
+async function ensureAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!audioCtx) audioCtx = new AC();
+  if (audioCtx.state === "suspended") await audioCtx.resume();
+  state.audioReady = true;
+  return audioCtx;
+}
+
+async function tone(freq, ms, vol = 0.12) {
+  const ctx = await ensureAudio();
+  if (!ctx) return;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = "sine"; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + ms / 1000);
+  o.connect(g).connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime + ms / 1000);
+}
+
+async function seq(freqs, ms, vol) {
+  for (const f of freqs) { await tone(f, ms, vol); await delay(ms); }
+}
+
+async function heartbeat() {
+  const ctx = await ensureAudio();
+  if (!ctx) return;
+  const o = ctx.createOscillator(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+  o.type = "sine"; o.frequency.value = 200; fl.type = "lowpass"; fl.frequency.value = 250;
+  g.gain.setValueAtTime(0.11, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+  o.connect(fl).connect(g).connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime + 0.06);
+}
+
+function speak(text, { pitch = 1, rate = 0.92, volume = 1 } = {}) {
+  return new Promise((resolve) => {
+    if (!("speechSynthesis" in window)) return resolve();
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US"; u.pitch = pitch; u.rate = rate; u.volume = volume;
+    u.onend = () => resolve(); u.onerror = () => resolve();
+    window.speechSynthesis.speak(u);
+  });
+}
+
+function stopRec() {
+  restarting = false;
+  try { rec && rec.abort(); } catch { /* noop */ }
+  rec = null;
+}
+
+function render() {
+  const isMastered = state.pass >= 6 || state.mode === "mastered";
+  $("cmd-text").textContent = `“${COMMAND_TEXT[state.mode]}”`;
+  $("cue-text").textContent = state.mode === "idle" ? "🗣️ 위 문장 전체 소리를 들으려면 이렇게 말해보세요:" : "🎧 지금은 이 안내를 따라가세요:";
+  $("guidance").style.display = isMastered ? "none" : "";
+  $("orb").className = `orb state-${state.mode}${state.listening ? " is-listening" : ""}`;
+  $("pip").className = `pip${state.mode === "stt" || state.listening ? " is-live" : ""}`;
+  $("status").textContent = state.listening ? "듣고 있어요... 말씀하세요" : LABELS[state.mode];
+  $("tap-hint").style.display = state.mode === "idle" && !state.listening ? "" : "none";
+  $("target-label").textContent = `Target / 0${state.sentence + 1}`;
+  $("chunk-board").classList.toggle("is-blind", state.mode === "stt");
+  $("blind-cover").classList.toggle("hidden", state.mode !== "stt");
+  $("pass-num").textContent = String(state.pass);
+  $("btn-play").classList.toggle("is-active", state.mode === "tts" && state.step === null);
+  $("btn-train").classList.toggle("is-active", state.mode === "train");
+  $("btn-test").classList.toggle("is-active", state.mode === "stt");
+  $("btn-manual").classList.toggle("hidden", state.mode !== "stt");
+  $("tone-lock").textContent = isMastered ? "✨" : "🔒";
+  $("tone-note").style.display = isMastered ? "none" : "";
+  $("cafe-link").classList.toggle("hidden", !isMastered);
+
+  const dots = $("dots");
+  dots.innerHTML = "";
+  WHISPERS.forEach((_, i) => {
+    const w = document.createElement("div");
+    w.className = "dot-wrap";
+    const d = document.createElement("span");
+    d.className = `pass-dot${i < state.pass ? " is-complete" : ""}`;
+    const n = document.createElement("span");
+    n.textContent = `0${i + 1}`;
+    w.append(d, n); dots.append(w);
+  });
+
+  const body = $("board-body");
+  body.innerHTML = "";
+  const steps = backwardSteps();
+  if (state.step !== null && steps[state.step]) {
+    const s = steps[state.step];
+    const tag = document.createElement("div");
+    tag.innerHTML = `<span class="step-tag">${s.step}</span><span class="kicker">뒤에서부터 연결</span>`;
+    const p = document.createElement("p");
+    p.className = "sentence"; p.style.fontSize = "25px"; p.textContent = s.text;
+    const ipa = document.createElement("p");
+    ipa.className = "ipa"; ipa.textContent = s.ipa;
+    const box = document.createElement("div");
+    box.append(tag, p, ipa); body.append(box);
+  } else {
+    const p = document.createElement("p");
+    p.className = "sentence"; p.textContent = S().text;
+    const hints = document.createElement("div");
+    hints.className = "hints";
+    S().chunks.forEach((c, i) => {
+      const h = document.createElement("p");
+      h.innerHTML = `<span>0${i + 1}</span>`;
+      h.append(document.createTextNode(c.hint));
+      hints.append(h);
+    });
+    body.append(p, hints);
+  }
+
+  const grid = $("tone-grid");
+  grid.innerHTML = "";
+  S().tones.forEach((t) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.disabled = !isMastered;
+    b.className = `tone-button${state.tone === t.key ? " is-active" : ""}`;
+    b.setAttribute("aria-label", `${t.label} 톤으로 듣기`);
+    b.innerHTML = `<span style="font-size:24px">${t.emoji}</span><span>${t.label}</span>`;
+    b.addEventListener("click", () => void playEmotion(t));
+    grid.append(b);
+  });
+}
+
+function backwardSteps() {
+  const s = S();
+  return [
+    { text: s.chunks[2].text, ipa: s.chunks[2].ipa, step: "01" },
+    { text: `${s.chunks[1].text} ${s.chunks[2].text}`, ipa: `${s.chunks[1].ipa} ${s.chunks[2].ipa}`, step: "02" },
+    { text: s.text, ipa: s.ipa, step: "03" },
+  ];
+}
+
+function say(msg) { $("heard").textContent = msg; }
+
+async function registerPass() {
+  if (state.pass >= 6) return;
+  state.pass += 1;
+  say(`${state.pass}번째 소리를 받았어요`);
+  render();
+  await tone(1046.5, 300, 0.14);
+  const w = WHISPERS[state.pass - 1];
+  if (w) await speak(w, { pitch: 0.9, rate: 0.74, volume: 0.45 });
+  if (state.pass === 6) {
+    stopRec();
+    state.mode = "mastered"; state.fallback = false;
+    render();
+    await seq([523.25, 659.25, 784, 1046.5], 100, 0.14);
+    await speak("Well done, you did it!", { pitch: 1.08, rate: 0.92 });
+  }
+}
+
+function newRecognizer() {
+  const C = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!C) return null;
+  const r = new C();
+  r.lang = "en-US"; r.continuous = false; r.interimResults = false;
+  return r;
+}
+
+function startTestRec() {
+  const r = newRecognizer();
+  if (!r) { state.fallback = true; say("이 브라우저에서는 마이크 대신 수동 인증을 사용해 주세요"); render(); return; }
+  stopRec();
+  rec = r; restarting = true;
+  let done = false;
+  r.onresult = (e) => {
+    const t = e.results[0]?.[0]?.transcript ?? "";
+    say(t ? `들린 소리 · ${t}` : "소리를 받았어요");
+    // MVP fix: 빈 결과·onspeechend만으로는 카운트하지 않고, 실제 transcript가 있을 때만 통과
+    if (state.mode === "stt" && !done && t.trim()) { done = true; void registerPass(); }
+    else if (state.mode === "stt" && !done && !t.trim()) say("소리가 너무 작았어요. 다시 말해보세요");
+  };
+  r.onspeechend = () => { try { r.stop(); } catch { /* noop */ } };
+  r.onerror = (e) => {
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      restarting = false; state.fallback = true;
+      say("마이크 권한이 없어 수동 인증을 열었어요"); render();
+    }
+  };
+  r.onend = () => {
+    rec = null;
+    if (state.mode === "stt" && state.pass < 6 && restarting) setTimeout(startTestRec, 400);
+  };
+  try { r.start(); say("마이크가 듣고 있어요"); }
+  catch { state.fallback = true; render(); }
+}
+
+async function playSentence() {
+  stopRec();
+  state.mode = "tts"; state.step = null; say("전체 문장을 들려드릴게요"); render();
+  await ensureAudio(); await delay(500);
+  await seq([261.63, 329.63, 392], 100);
+  await speak(S().text);
+  state.mode = "idle"; say("다시 듣거나, 뒤에서부터 연결해 보세요"); render();
+}
+
+async function trainBackward() {
+  stopRec();
+  state.mode = "train"; say("마지막 소리부터 앞으로 붙입니다"); render();
+  const steps = backwardSteps();
+  for (let i = 0; i < steps.length; i++) {
+    state.step = i; render();
+    await speak(steps[i].text);
+    if (i < steps.length - 1) { await heartbeat(); await delay(1200); }
+  }
+  state.mode = "idle"; say("세 덩어리가 하나로 연결됐어요"); render();
+}
+
+async function beginTest() {
+  stopRec();
+  state.mode = "stt"; state.step = null;
+  say("문장은 가렸어요. 귀에 들린 리듬으로 말해보세요"); render();
+  await ensureAudio(); await delay(300);
+  await seq([880, 1200], 40, 0.1);
+  startTestRec();
+}
+
+function resetSession() {
+  stopRec();
+  state.listening = false;
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  if (audioCtx && audioCtx.state !== "closed") audioCtx.close().catch(() => undefined);
+  audioCtx = null;
+  state.mode = "idle"; state.pass = 0; state.step = null; state.tone = null;
+  state.fallback = false; state.audioReady = false;
+  say("화면을 한 번 터치해 소리를 깨워주세요");
+  render();
+}
+
+async function playEmotion(t) {
+  state.tone = t.key; state.mode = "tts"; render();
+  await speak(t.text || S().text, { pitch: t.pitch, rate: t.rate, volume: t.key === "exclamatory" ? 1 : 0.94 });
+  state.mode = "mastered"; state.tone = null; render();
+}
+
+function handleOrbTap() {
+  if (state.mode !== "idle" && state.mode !== "mastered") return;
+  void ensureAudio();
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0; u.rate = 10;
+    window.speechSynthesis.speak(u);
+  }
+  const r = newRecognizer();
+  if (!r) { state.fallback = true; say("이 브라우저에서는 마이크 대신 아래 버튼을 눌러 주세요"); render(); return; }
+  try { rec && rec.abort(); } catch { /* noop */ }
+  rec = r;
+  let handled = false;
+  r.onresult = (e) => {
+    const t = (e.results[e.results.length - 1]?.[0]?.transcript || "").toLowerCase();
+    say(t ? `들은 명령 · ${t}` : "소리를 받았어요");
+    const c = matchCommand(t);
+    if (c && !handled) {
+      handled = true;
+      if (c === "play") void playSentence();
+      else if (c === "train") void trainBackward();
+      else if (c === "test") void beginTest();
+    }
+  };
+  r.onerror = (e) => {
+    state.listening = false; render();
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      state.fallback = true; say("마이크 권한이 없어 수동 인증을 열었어요");
+    } else if (!handled) say("잘 듣지 못했어요. 오브를 다시 탭하고 말해보세요");
+    render();
+  };
+  r.onend = () => { rec = null; state.listening = false; render(); };
+  try { r.start(); state.listening = true; say("듣고 있어요... 말씀하세요"); }
+  catch { state.listening = false; say("오브를 다시 탭하고 말해보세요"); }
+  render();
+}
+
+$("orb").addEventListener("pointerdown", handleOrbTap);
+$("btn-play").addEventListener("click", () => void playSentence());
+$("btn-train").addEventListener("click", () => void trainBackward());
+$("btn-test").addEventListener("click", () => void beginTest());
+$("btn-reset").addEventListener("click", resetSession);
+$("btn-manual").addEventListener("click", () => void registerPass());
+$("app").addEventListener("pointerdown", () => { if (!state.audioReady) void ensureAudio(); });
+
+render();

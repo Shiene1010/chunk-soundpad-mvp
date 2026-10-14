@@ -56,6 +56,8 @@ lists/cards always via `h()`. New dynamic UI must reuse these, not invent.
 
 ## 9. Verify
 - `node --check app.js` + headless Chrome console 0 errors (`--headless=new --dump-dom` + `CONSOLE` grep) + `localhost:8080` serve 200. Grammar check alone is insufficient (TDZ precedent `0aecda5`).
+- 가상시간(`--virtual-time-budget`) 헤드리스에서는 fetch가 resolve되지 않아 autoload 검증 불가.
+  상호작용·로드는 CDP(`--remote-debugging-port` + `Runtime.evaluate`) 실측으로.
 
 ## Do not
 - No hard locks or gates on learning actions (recommend via pulse, never disable).

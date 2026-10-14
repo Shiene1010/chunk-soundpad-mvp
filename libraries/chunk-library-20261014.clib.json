@@ -1,0 +1,102 @@
+{
+  "format": "chunk-soundpad-library",
+  "version": 1,
+  "name": "builder-batch",
+  "title": "빌더 배치",
+  "created": "2026-10-14T14:21:42.842491+00:00",
+  "entries": [
+    {
+      "id": "thats_done_it_wont_hold_water",
+      "level": "beginner",
+      "text": "That's done it. It won't be any use of holding water when we clean the windows.",
+      "ipa": "[ðæts dʌn ɪt. ɪt woʊnt bi ˈɛni jus əv ˈhoʊldɪŋ ˈwɔtər wɛn wi klin ðə ˈwɪndoʊz]",
+      "chunks": [
+        {
+          "section": "01",
+          "items": [],
+          "text": "That's done it.",
+          "ipa": "[ðæts dʌn ɪt]",
+          "hint": "끝났어 (호흡 시작 마디)"
+        },
+        {
+          "section": "02",
+          "items": [],
+          "text": "It won't be any use",
+          "ipa": "[ɪt woʊnt bi ˈɛni jus]",
+          "hint": "소용 없을 거야 (동사부 연결마디)"
+        },
+        {
+          "section": "03",
+          "items": [],
+          "text": "of holding water",
+          "ipa": "[əv ˈhoʊldɪŋ ˈwɔtər]",
+          "hint": "물을 담는 것이 (동사부 연결마디)"
+        },
+        {
+          "section": "04",
+          "items": [],
+          "text": "when we clean the windows.",
+          "ipa": "[wɛn wi klin ðə ˈwɪndoʊz]",
+          "hint": "창문을 닦을 때 (억양 매듭마디)"
+        }
+      ],
+      "tones": [
+        {
+          "key": "imperative",
+          "emoji": "📢",
+          "label": "명령",
+          "pitch": 1.05,
+          "rate": 1.0,
+          "text": "Clean the windows!"
+        },
+        {
+          "key": "interrogative",
+          "emoji": "❓",
+          "label": "의문",
+          "pitch": 1.12,
+          "rate": 0.95,
+          "text": "Will it hold water?"
+        },
+        {
+          "key": "exclamatory",
+          "emoji": "🔥",
+          "label": "감탄",
+          "pitch": 1.15,
+          "rate": 1.05,
+          "text": "It won't hold water!"
+        },
+        {
+          "key": "surprised",
+          "emoji": "😲",
+          "label": "놀람",
+          "pitch": 1.25,
+          "rate": 1.15,
+          "text": "It won't hold water?!"
+        },
+        {
+          "key": "sarcastic",
+          "emoji": "😏",
+          "label": "비꼼",
+          "pitch": 0.85,
+          "rate": 0.82,
+          "text": "Oh, it'll hold water."
+        }
+      ],
+      "ccq": [
+        {
+          "a": "yes",
+          "q": "Is the work finished?"
+        },
+        {
+          "a": "no",
+          "q": "Can it hold water?"
+        },
+        {
+          "a": "yes",
+          "q": "Is it for cleaning windows?"
+        }
+      ]
+    }
+  ],
+  "sha256": "6a5cbaabe732cb48d233b463d147fa80c23967794d73b0d28a1eac7ea394e73d"
+}

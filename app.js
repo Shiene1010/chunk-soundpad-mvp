@@ -651,7 +651,19 @@ function upsertEntries(entries) {
 }
 
 const BUNDLED_LIB = "expressions/sample-library.clib.json";
+const LIB_MANIFEST = "libraries/manifest.json";
+const RAW_BASE = "https://raw.githubusercontent.com/Shiene1010/chunk-soundpad-mvp/main/";
 const LIB_SHA_KEY = "cspm-lib-sha";
+
+async function fetchJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw 0;
+  return JSON.parse(await r.text());
+}
+async function fetchJSONWithRaw(url) {
+  try { return await fetchJSON(url); }
+  catch { return await fetchJSON(RAW_BASE + url); }
+}
 
 function storedSha() { try { return localStorage.getItem(LIB_SHA_KEY); } catch { return null; } }
 function storeSha(s) { if (s) { try { localStorage.setItem(LIB_SHA_KEY, s); } catch { /* noop */ } } }
@@ -667,18 +679,27 @@ async function loadBundled(manual = false) {
     return status;
   };
   try {
-    const r = await fetch(BUNDLED_LIB);
-    if (!r.ok) throw 0;
-    const lib = JSON.parse(await r.text());
-    const bad = validateLibrary(lib);
-    if (bad) return done("invalid", bad);
-    const ierr = await verifyLibrary(lib);
-    if (ierr) return done("invalid", ierr);
-    const upgraded = upsertEntries(lib.entries);
-    storeSha(lib.sha256 || null);
-    if (!upgraded) return done("uptodate", "최신 상태");
-    savePacks(PACKS);
-    return done("added", upgraded + "개 가져옴");
+    const urls = [BUNDLED_LIB];
+    try {
+      const man = await fetchJSONWithRaw(LIB_MANIFEST);
+      if (man && man.latest) urls.push("libraries/" + man.latest);
+    } catch { /* manifest optional */ }
+    let merged = 0;
+    let problem = null;
+    for (const u of urls) {
+      try {
+        const lib = await fetchJSONWithRaw(u);
+        const bad = validateLibrary(lib);
+        if (bad) { problem = problem || bad; continue; }
+        const ierr = await verifyLibrary(lib);
+        if (ierr) { problem = problem || ierr; continue; }
+        merged += upsertEntries(lib.entries);
+        storeSha(lib.sha256 || null);
+      } catch { problem = problem || "읽기 실패"; }
+    }
+    if (merged) savePacks(PACKS);
+    if (!merged) return done("uptodate", problem || "최신 상태");
+    return done("added", merged + "개 가져옴");
   } catch {
     return done("failed", "폴더 읽기 실패: localhost:8080으로 여세요");
   }

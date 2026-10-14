@@ -83,9 +83,14 @@ h1 { font-size: 18px; margin-top: 4px; }
 .view-head h2 { font-size: 18px; color: #fff; }
 .view-sub { font-size: 12px; color: #777; margin: 4px 0 16px; }
 .tabbar { position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(18,18,20,.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-top: 1px solid #2a2a30; margin: 20px -20px -28px; padding: 8px 4px calc(8px + env(safe-area-inset-bottom)); }
-.tab { background: none; border: none; color: #666; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; padding: 6px 0; cursor: pointer; }
+.tab { position: relative; background: none; border: none; color: #666; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; padding: 6px 0; cursor: pointer; }
 .tab-icon { font-size: 22px; }
 .tab.active { color: #2ecc71; font-weight: 700; }
+.tab-badge { position: absolute; top: 0; right: calc(50% - 26px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #ff453a; color: #fff; font-size: 10px; font-weight: 800; display: grid; place-items: center; }
+.tab-badge.done { background: #2ecc71; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%) translateY(8px); bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 60; max-width: 340px; background: rgba(28,28,33,.96); border: 1px solid #444; color: #fff; font-size: 13px; border-radius: 20px; padding: 10px 18px; opacity: 0; transition: opacity .25s ease, transform .25s ease; pointer-events: none; text-align: center; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } .cmd-btn.is-next { animation: none; } }
 /* 형태 */
 .picker { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .pick { border: 1px solid #333; background: #1c1c21; color: #999; border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; }

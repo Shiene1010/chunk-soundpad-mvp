@@ -159,6 +159,10 @@ function render() {
   $("view-title").textContent = VIEW_TITLES[state.view] || "듣기연습";
   document.querySelectorAll(".view").forEach((s) => s.classList.toggle("hidden", s.id !== "view-" + state.view));
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.view === state.view));
+  const tb = $("tab-badge-listen");
+  if (isMastered) { tb.textContent = "✓"; tb.classList.add("done"); tb.classList.remove("hidden"); }
+  else if (state.pass > 0) { tb.textContent = state.pass + "/6"; tb.classList.remove("done"); tb.classList.remove("hidden"); }
+  else tb.classList.add("hidden");
   if (state.view === "form") renderForm();
   if (state.view === "history") renderHistory();
   if (state.view === "me") renderMe();
@@ -353,6 +357,20 @@ function backwardSteps() {
 
 function say(msg) { $("heard").textContent = msg; }
 
+let toastTimer = null;
+function showToast(msg, ms = 1600) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  requestAnimationFrame(() => el.classList.add("show"));
+  clearTimeout(toastTimer);
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  toastTimer = setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.classList.add("hidden"), reduce ? 0 : 250);
+  }, ms);
+}
+
 async function registerPass() {
   if (state.pass >= 6) return;
   state.pass += 1;
@@ -517,6 +535,7 @@ function handleOrbTap() {
 function busy() {
   if (state.mode === "tts" || state.mode === "train") {
     say("지금은 듣는 중이에요. 끝나면 눌러주세요");
+    showToast("지금은 듣는 중이에요");
     return true;
   }
   return false;
@@ -526,9 +545,10 @@ function importPack() {
   const msg = $("import-msg");
   let obj;
   try { obj = JSON.parse($("import-text").value); }
-  catch { msg.textContent = "JSON 파싱 실패. 형식을 확인하세요"; return; }
+  catch { msg.textContent = "JSON 파싱 실패. 형식을 확인하세요"; showToast("JSON 파싱 실패"); return; }
   if (!obj || typeof obj.text !== "string" || !Array.isArray(obj.chunks) || obj.chunks.length === 0 || !obj.chunks.every((c) => c && typeof c.text === "string")) {
     msg.textContent = "필요: {text, chunks:[{text}]} (hint·ipa 선택)";
+    showToast("형식이 안 맞아요");
     return;
   }
   obj.id = "pack_" + Date.now();
@@ -536,6 +556,7 @@ function importPack() {
   PACKS.push(obj); savePacks(PACKS);
   $("import-text").value = "";
   msg.textContent = `가져옴: 문장 0${SENTENCES.length + PACKS.length}`;
+  showToast("문장을 가져왔어요");
   render();
 }
 

@@ -70,3 +70,4 @@ h1 { font-size: 18px; margin-top: 4px; }
 .start-card p { margin-top: 12px; font-size: 14px; line-height: 1.6; color: #bbb; }
 #btn-start { margin-top: 20px; width: 100%; border: none; border-radius: 50px; background: #2ecc71; color: #fff; font-size: 18px; font-weight: 800; padding: 16px; cursor: pointer; }
 .start-note { font-size: 12px !important; color: #777 !important; }
+.skip { margin-top: 10px; background: none; border: none; color: #777; font-size: 13px; text-decoration: underline; cursor: pointer; }

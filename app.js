@@ -31,10 +31,14 @@ const PATTERNS = [
 ];
 const WHISPERS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
-const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false };
+const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false };
 let audioCtx = null;
 let rec = null;
 let restarting = false;
+// 에러 카운터: 연속 무음·네트워크 실패가 임계를 넘으면 수동 모드로 전환
+const err = { nospeech: 0, net: 0 };
+// TTS 자기 목소리 오인식 방지: 앱이 말한 단어는 패스로 치지 않음
+const SELF_VOICE = ["one", "two", "three", "four", "five", "six", "well done", "well done you did it"];
 
 const $ = (id) => document.getElementById(id);
 const S = () => SENTENCES[state.sentence];
@@ -104,23 +108,21 @@ async function requestMic() {
   }
 }
 
-async function startSession() {
+async function startSession(skipMic = false) {
   await ensureAudio();
-  const granted = await requestMic();
+  state.noTts = !("speechSynthesis" in window);
+  const granted = skipMic ? false : await requestMic();
   $("start-overlay").classList.add("hidden");
   state.started = true;
-  if (granted) {
-    say("준비됐어요. 아래 명령을 누르거나 직접 말해보세요");
-    render();
-    if (!state.guided) {
-      state.guided = true;
-      await speak("준비됐어요. 문장은 가려져 있어요. 먼저 소리로 들어보세요.");
-    }
-  } else {
-    state.fallback = true;
-    say("마이크가 안 돼서 버튼으로 인증하세요.");
-    render();
-    await speak("마이크가 안 돼서 버튼으로 인증하세요.");
+  if (!granted) state.fallback = true;
+  if (state.noTts) say("이 브라우저는 소리 재생이 안 돼요. 글을 보고 연습하세요.");
+  else if (!granted) say("마이크가 안 돼서 버튼으로 인증하세요.");
+  else say("준비됐어요. 아래 명령을 누르거나 직접 말해보세요");
+  render();
+  if (!state.guided && !state.noTts) {
+    state.guided = true;
+    if (granted) await speak("준비됐어요. 문장은 가려져 있어요. 먼저 소리로 들어보세요.");
+    else await speak("마이크가 안 돼서 버튼으로 인증하세요.");
   }
 }
 
@@ -166,7 +168,7 @@ function render() {
   const body = $("board-body");
   body.innerHTML = "";
   const steps = backwardSteps();
-  const revealed = state.pass >= 6 || state.mode === "mastered";
+  const revealed = state.noTts || state.pass >= 6 || state.mode === "mastered";
   if (!revealed && state.step !== null && steps[state.step]) {
     // 블라인드 퍼스트: 훈련 중에도 영어 텍스트·IPA 미공개, 단계+한글 힌트만
     const s = steps[state.step];
@@ -274,9 +276,11 @@ function startTestRec() {
   let done = false;
   r.onresult = (e) => {
     const t = e.results[0]?.[0]?.transcript ?? "";
+    const norm = t.toLowerCase().replace(/[.,!?'"“”]/g, " ").replace(/\s+/g, " ").trim();
+    if (norm && SELF_VOICE.includes(norm)) return; // 앱 TTS 자기 목소리 무시
     say(t ? `들린 소리 · ${t}` : "소리를 받았어요");
-    // MVP fix: 빈 결과·onspeechend만으로는 카운트하지 않고, 실제 transcript가 있을 때만 통과
-    if (state.mode === "stt" && !done && t.trim()) { done = true; void registerPass(); }
+    // 빈 결과로는 카운트하지 않고, 실제 transcript가 있을 때만 통과
+    if (state.mode === "stt" && !done && t.trim()) { done = true; err.nospeech = 0; err.net = 0; void registerPass(); }
     else if (state.mode === "stt" && !done && !t.trim()) say("소리가 너무 작았어요. 다시 말해보세요");
   };
   r.onspeechend = () => { try { r.stop(); } catch { /* noop */ } };
@@ -284,6 +288,15 @@ function startTestRec() {
     if (e.error === "not-allowed" || e.error === "service-not-allowed") {
       restarting = false; state.fallback = true;
       say("마이크 권한이 없어 수동 인증을 열었어요"); render();
+    } else if (e.error === "network") {
+      err.net += 1;
+      if (err.net >= 2) {
+        restarting = false; state.fallback = true;
+        say("인식이 계속 안 돼요. 버튼으로 계속하세요."); render();
+      }
+    } else if (e.error === "no-speech") {
+      err.nospeech += 1;
+      if (err.nospeech === 2) say("소리가 작아요. 크게 말해보세요.");
     }
   };
   r.onend = () => {
@@ -327,6 +340,7 @@ async function beginTest() {
 function resetSession() {
   stopRec();
   state.listening = false;
+  err.nospeech = 0; err.net = 0;
   window.speechSynthesis && window.speechSynthesis.cancel();
   if (audioCtx && audioCtx.state !== "closed") audioCtx.close().catch(() => undefined);
   audioCtx = null;
@@ -380,13 +394,28 @@ function handleOrbTap() {
   render();
 }
 
-$("btn-start").addEventListener("click", () => void startSession());
+// 재생 중 중복 탭 가드: tts/train 진행 중 명령은 텍스트로만 안내
+function busy() {
+  if (state.mode === "tts" || state.mode === "train") {
+    say("지금은 듣는 중이에요. 끝나면 눌러주세요");
+    return true;
+  }
+  return false;
+}
+
+$("btn-start").addEventListener("click", () => void startSession(false));
+$("btn-skip").addEventListener("click", () => void startSession(true));
 $("orb").addEventListener("pointerdown", handleOrbTap);
-$("btn-play").addEventListener("click", () => void playSentence());
-$("btn-train").addEventListener("click", () => void trainBackward());
-$("btn-test").addEventListener("click", () => void beginTest());
+$("btn-play").addEventListener("click", () => { if (!busy()) void playSentence(); });
+$("btn-train").addEventListener("click", () => { if (!busy()) void trainBackward(); });
+$("btn-test").addEventListener("click", () => { if (!busy()) void beginTest(); });
 $("btn-reset").addEventListener("click", resetSession);
 $("btn-manual").addEventListener("click", () => void registerPass());
 $("app").addEventListener("pointerdown", () => { if (!state.audioReady) void ensureAudio(); });
+// 화면 꺼짐·전화 수신 시 인식 중단, 복귀 시 stt면 재개
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopRec();
+  else if (state.started && state.mode === "stt" && state.pass < 6 && !state.fallback) startTestRec();
+});
 
 render();

@@ -37,11 +37,11 @@
 - `node --check`는 문법만 검사. **반드시 헤드리스 크롬 콘솔 확인**:
   `Google Chrome --headless=new --dump-dom` + `CONSOLE` 에러 grep
 
-## 6. 표현 라이브러리 (D9, D10, Frictionless 축소판)
+## 6. 표현 라이브러리 (D9–D11, Frictionless 축소판)
 - 직접 MD/JSON 임포트 금지. 출입은 `chunk-soundpad-library v1`(`.clib.json`)만
-- `expressions/`는 타겟표현01 단일 데이터셋. 시작 시 `library.clib.json` 자동로드
+- `expressions/`는 타겟표현01 단일 데이터셋(`roald-dahl-01.md` + `sample-library.clib.json`)
+- 로드 경로는 [표현 가져오기] 단일 버튼 + 시작 시 자동로드. 4경로 UI 폐기
 - 내장 문장은 `file://` 폴백. 폴더본과 텍스트 기준 dedupe
-- 공유 입출(파일 선택·내보내기·MD 묶기)은 라벨로 구분, 형식 게이트 동일
 
 ## 7. Git 워크플로
 - `main` 직푸시 (1인 MVP). 커밋 메시지: `<영역>: <내용>` (예: `Sprint1 T0-T2: ...`)

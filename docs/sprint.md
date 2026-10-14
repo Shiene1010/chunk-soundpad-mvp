@@ -33,7 +33,27 @@
 - `node --check`, 헤드리스 콘솔 0에러, 서빙 200, `.env` 미추적, 커밋·푸시.
 - 순서: T0 → T1·T2 → T3 → T4 → T5. 의존성: T3는 T0 결정 참조(아이콘).
 
-# Sprint 2 — 폴더 기반 라이브러리 (타겟표현01 단일 데이터셋)
+# Sprint 2 — 폴더 기반 라이브러리 (타겟표현01 단일 데이터셋) [완료]
+
+# Sprint 3 — 폴더 단일버튼 임포트
+
+> 방향: 깃헙 메인(루트) `expressions/`에 샘플 타겟표현 데이터셋만.
+> 샘플표현라이브러리 파일 1개에서 불러오기. 메뉴는 표현가져오기 버튼 1개.
+> 기존 4경로(다시읽기·파일선택·붙여넣기·묶기/내보내기) 정리.
+
+## S3-T0. 폴더 최종형 (S)
+- `expressions/`: `roald-dahl-01.md`(원천) + `sample-library.clib.json`(봉인 로드용) + `README.md`.
+- `library.clib.json` → `sample-library.clib.json` 개명. 상수·문서 동기화.
+- 완료: 폴더 3파일, `agents_check` 통과.
+
+## S3-T1. 버튼 단일화 (M)
+- 내정보 라이브러리 구역 = [표현 가져오기] 1개 + 로드 목록(읽기+삭제).
+- 삭제: 다시읽기·파일선택·붙여넣기·묶기·내보내기 UI와 데드코드(`importPack`·`wrapMDToLibrary`·`exportLibrary`·`downloadJSON`·file 핸들러). `parseMD`는 빌드 공용이라 주석 유지.
+- 버튼 동작: 폴더 샘플 파일 fetch → 검증 → 병합 → 토스트.
+- 완료: 헤드리스 0에러, 버튼 1회로 로드 확인.
+
+## S3-T2. 검증·문서·푸시 (S)
+- `node --check`, 헤드리스, `agents_check` DRIFT 0, plan D11, AGENTS §6, 푸시.
 
 > 방향: `expressions/`는 기존 타겟표현01 데이터셋만. 임포트는 이 폴더에서.
 > 내장 문장은 `file://` 폴백으로 유지, 폴더본과 텍스트 기준 dedupe.

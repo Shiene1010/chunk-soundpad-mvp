@@ -12,6 +12,7 @@
 - **D6 4탭**: 듣기연습(Speaker) / 형태(Text) / 기록(History) / 내정보(CircleUser). 설정은 내정보 안, 학습 단계는 탭이 아니라 홈 패스/모드 안.
 - **D7 5모드**: M1 듣기 → M2 말하기 → M3 조립 → M4 형태 → M5 활용. M2·M3 엔진 통일(오디오 N회+카운트, 설정만 다름).
 - **D8 아이콘**: 크롬(탭·버튼)은 lucide 인라인 SVG로 통일, 톤 얼굴 이모지는 콘텐츠라 유지. F7 Icons 차순위(iOS풍이나 세트 중복 회피). 교체는 후속.
+- **D9 라이브러리 형식**: 직접 MD/JSON 임포트 금지. `chunk-soundpad-library v1`(.clib.json)만 출입 — 디스크립터+인라인 entries+sha256(Frictionless 축소판). MD는 작성용, 묶기 변환기로 clib화.
 
 ## 2. 구현됨
 

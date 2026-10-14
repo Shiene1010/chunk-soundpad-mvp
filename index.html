@@ -87,13 +87,14 @@
 <div class="set-row"><span>음성 안내</span><button type="button" id="set-guide" class="toggle" aria-pressed="true">켬</button></div>
 <h3 class="lib-title">표현 라이브러리</h3>
 <div id="pack-list"></div>
-<textarea id="import-text" rows="4" placeholder='MD 또는 JSON 붙여넣기 (--- 로 시작하면 MD)'></textarea>
-<button type="button" id="btn-import" class="manual">붙여넣기로 문장 가져오기</button>
+<textarea id="import-text" rows="4" placeholder='라이브러리 JSON 또는 MD 붙여넣기 (MD는 묶기용)'></textarea>
+<button type="button" id="btn-import" class="manual">라이브러리로 가져오기</button>
+<button type="button" id="btn-wrap-md" class="manual">MD 묶어서 다운로드</button>
+<button type="button" id="btn-export-lib" class="manual">내 표현 내보내기</button>
 <div class="picker" id="preset-list">
-<button type="button" class="pick" data-preset="expressions/early-bird-01.md">샘플: early bird</button>
-<button type="button" class="pick" data-preset="expressions/practice-makes-perfect-01.md">샘플: practice</button>
+<button type="button" class="pick" data-preset="expressions/starter.clib.json">샘플 팩</button>
 </div>
-<label class="file-btn">md 파일 선택<input type="file" id="file-md" accept=".md,.markdown" multiple hidden></label>
+<label class="file-btn">라이브러리 파일 선택<input type="file" id="file-md" accept=".clib.json,application/json" hidden></label>
 <p class="tone-note" id="import-msg"></p>
 </section>
 

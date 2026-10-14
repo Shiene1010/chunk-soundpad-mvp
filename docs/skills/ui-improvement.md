@@ -41,6 +41,19 @@ North star: 한 번 말하기. Every UI change must shorten time-to-first-uttera
 - Mic-first overlay (`de7e70d`): idle-first start → `#start-overlay` + `requestMic()` up front, `#btn-skip` manual fallback.
 - Single import button (`c5d85b5`, D11): 4-path import UI + dead code → one `#btn-get-expressions` + autoload `loadBundled()` (−103/+4 lines).
 
+## 8. Component system (containers + base reuse)
+
+Containers (static HTML, named): AppShell = `header` sticky + `.view` VScroll views
+(one visible via `showView`) + `.tabbar` fixed + `#start-overlay` cover + `#toast`.
+TabViews: `view-listen` (sound only) / `view-form` (cards+CCQ) / `view-history`
+(rows) / `view-me` (settings+library). Views never render each other.
+
+Base (JS factory `h(tag, cls, text)` — direct `createElement` only inside `h`):
+`dot-wrap`/`pass-dot` (listen) · `tone-button` (listen post-pass) · `pick` (form)
+· `form-card` (form) · `hist-row` (history+me) · `ccq-card`/`ccq-ans` (form quiz)
+· `cover-line`+CTA (empty states). Static shells stay in HTML; dynamic
+lists/cards always via `h()`. New dynamic UI must reuse these, not invent.
+
 ## 9. Verify
 - `node --check app.js` + headless Chrome console 0 errors (`--headless=new --dump-dom` + `CONSOLE` grep) + `localhost:8080` serve 200. Grammar check alone is insufficient (TDZ precedent `0aecda5`).
 

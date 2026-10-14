@@ -9,6 +9,7 @@
 </head>
 <body>
 <main class="sound-pad" id="app">
+<!-- AppShell: StartCover -->
 <div id="start-overlay">
 <div class="start-card">
 <h1>Chunk Sound Pad</h1>
@@ -19,11 +20,13 @@
 </div>
 </div>
 <div class="wrap">
+<!-- AppShell: Header (sticky top) -->
 <header>
 <button type="button" id="btn-reset" aria-label="새로고침 — 모든 상태 초기화" title="새로고침 — 모든 상태 초기화">↺</button>
 <div><p class="brand">Chunk Sound Pad MVP</p><h1 id="view-title">듣기연습</h1></div>
 </header>
 
+<!-- VScroll: TabViews (one visible) -->
 <section class="view" id="view-listen">
 <section class="guidance" id="guidance" aria-live="polite">
 <p class="kicker">Beginner radio cue</p>
@@ -84,6 +87,7 @@
 
 <div id="toast" class="toast hidden" role="status"></div>
 
+<!-- AppShell: TabBar (fixed bottom) -->
 <nav class="tabbar" aria-label="주요 메뉴">
 <button type="button" class="tab" data-view="listen"><span class="tab-icon">🔊</span><span>듣기연습</span><span class="tab-badge hidden" id="tab-badge-listen"></span></button>
 <button type="button" class="tab" data-view="form"><span class="tab-icon">📝</span><span>폼</span></button>

@@ -36,6 +36,13 @@ const ALL = () => SENTENCES.concat(PACKS);
 
 const $ = (id) => document.getElementById(id);
 const S = () => ALL()[state.sentence] || { text: "", ipa: "", chunks: [], tones: [] };
+// 베이스 컴포넌트: 모든 동적 뷰는 이 팩토리로 조립 (직접 createElement 금지)
+function h(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined && text !== null) e.textContent = text;
+  return e;
+}
 const hasSentence = () => Boolean(S().text);
 function needSentence() {
   if (hasSentence()) return false;
@@ -177,11 +184,10 @@ function render() {
   tg.innerHTML = "";
   if (isMastered) {
     (S().tones || []).forEach((t) => {
-      const b = document.createElement("button");
+      const b = h("button", `tone-button${state.tone === t.key ? " is-active" : ""}`);
       b.type = "button";
-      b.className = `tone-button${state.tone === t.key ? " is-active" : ""}`;
       b.setAttribute("aria-label", `${t.label} 톤으로 듣기`);
-      b.innerHTML = `<span style="font-size:24px">${t.emoji}</span><span>${t.label}</span>`;
+      b.append(h("span", "tone-emoji", t.emoji), h("span", null, t.label));
       b.addEventListener("click", () => void playEmotion(t));
       tg.append(b);
     });
@@ -202,12 +208,9 @@ function render() {
   const dots = $("dots");
   dots.innerHTML = "";
   WHISPERS.forEach((_, i) => {
-    const w = document.createElement("div");
-    w.className = "dot-wrap";
-    const d = document.createElement("span");
-    d.className = `pass-dot${i < state.pass ? " is-complete" : ""}`;
-    const n = document.createElement("span");
-    n.textContent = `0${i + 1}`;
+    const w = h("div", "dot-wrap");
+    const d = h("span", `pass-dot${i < state.pass ? " is-complete" : ""}`);
+    const n = h("span", null, `0${i + 1}`);
     w.append(d, n); dots.append(w);
   });
 
@@ -217,10 +220,9 @@ function renderForm() {
   const box = $("form-cards");
   box.innerHTML = "";
   if (!hasSentence()) {
-    const p = document.createElement("p");
-    p.className = "cover-line"; p.textContent = "표현이 없어요. 먼저 가져오세요";
-    const go = document.createElement("button");
-    go.type = "button"; go.className = "manual"; go.textContent = "표현 가져오러 가기";
+    const p = h("p", "cover-line", "표현이 없어요. 먼저 가져오세요");
+    const go = h("button", "manual", "표현 가져오러 가기");
+    go.type = "button";
     go.addEventListener("click", () => showView("me"));
     box.append(p, go);
     $("sentence-picker").innerHTML = "";
@@ -230,23 +232,20 @@ function renderForm() {
   const picker = $("sentence-picker");
   picker.innerHTML = "";
   ALL().forEach((item, i) => {
-    const b = document.createElement("button");
+    const b = h("button", `pick${i === state.sentence ? " is-on" : ""}`, `문장 0${i + 1}`);
     b.type = "button";
-    b.className = `pick${i === state.sentence ? " is-on" : ""}`;
-    b.textContent = `문장 0${i + 1}`;
     b.title = item.text;
     b.addEventListener("click", () => { state.sentence = i; state.pass = 0; state.step = null; state.didPlay = false; state.didTrain = false; if (state.mode !== "idle") { stopRec(); state.mode = "idle"; } render(); });
     picker.append(b);
   });
-  const full = document.createElement("p");
-  full.className = "form-full"; full.textContent = s.text;
+  const full = h("p", "form-full", s.text);
   box.append(full);
   s.chunks.forEach((c, i) => {
-    const card = document.createElement("button");
-    card.type = "button"; card.className = "form-card";
+    const card = h("button", "form-card");
+    card.type = "button";
     card.innerHTML = `<span class="step-badge">0${i + 1}</span>`;
-    const t = document.createElement("p"); t.className = "form-text"; t.textContent = c.text;
-    const hint = document.createElement("p"); hint.className = "form-hint"; hint.textContent = c.hint || "";
+    const t = h("p", "form-text", c.text);
+    const hint = h("p", "form-hint", c.hint || "");
     card.append(t, hint);
     card.addEventListener("click", () => void speak(c.text, { rate: state.slow ? 0.65 : 0.85 }));
     box.append(card);
@@ -264,11 +263,11 @@ function renderCCQ(s) {
   const scoreEl = $("ccq-score");
   scoreEl.textContent = `0/${items.length} 맞춤`;
   items.forEach((q) => {
-    const card = document.createElement("div"); card.className = "ccq-card";
-    const t = document.createElement("p"); t.className = "ccq-q"; t.textContent = q.q;
-    const row = document.createElement("div"); row.className = "ccq-row";
-    const yes = document.createElement("button"); yes.type = "button"; yes.className = "ccq-ans"; yes.textContent = "예";
-    const no = document.createElement("button"); no.type = "button"; no.className = "ccq-ans"; no.textContent = "아니오";
+    const card = h("div", "ccq-card");
+    const t = h("p", "ccq-q", q.q);
+    const row = h("div", "ccq-row");
+    const yes = h("button", "ccq-ans", "예"); yes.type = "button";
+    const no = h("button", "ccq-ans", "아니오"); no.type = "button";
     const mark = (btn, ok) => {
       btn.classList.add(ok ? "is-yes" : "is-no");
       yes.disabled = true; no.disabled = true;
@@ -291,9 +290,9 @@ function renderHistory() {
     ["세션", String(st.sessions || 0) + "회"],
   ];
   rows.forEach(([k, v]) => {
-    const r = document.createElement("div"); r.className = "hist-row";
-    const a = document.createElement("span"); a.textContent = k;
-    const b = document.createElement("b"); b.textContent = v;
+    const r = h("div", "hist-row");
+    const a = h("span", null, k);
+    const b = h("b", null, v);
     r.append(a, b); box.append(r);
   });
 }
@@ -312,15 +311,15 @@ function renderMe() {
   const libMsg = $("lib-status");
   if (PACKS.length === 0) {
     libMsg.textContent = "아직 가져온 표현이 없어요. 아래 버튼으로 가져오세요";
-    const p = document.createElement("p"); p.className = "tone-note"; p.textContent = "비어 있음";
+    const p = h("p", "tone-note", "비어 있음");
     list.append(p);
   } else {
     libMsg.textContent = `로드됨 ${PACKS.length}개` + (storedSha() ? "" : " (sha 미기록)");
   }
   PACKS.forEach((p, i) => {
-    const r = document.createElement("div"); r.className = "hist-row";
-    const a = document.createElement("span"); a.textContent = (p.text || "").slice(0, 28) + "…";
-    const del = document.createElement("button"); del.type = "button"; del.className = "peek"; del.textContent = "삭제";
+    const r = h("div", "hist-row");
+    const a = h("span", null, (p.text || "").slice(0, 28) + "…");
+    const del = h("button", "peek", "삭제"); del.type = "button";
     del.addEventListener("click", () => {
       PACKS.splice(i, 1); savePacks(PACKS);
       if (state.sentence >= SENTENCES.length + PACKS.length) state.sentence = 0;

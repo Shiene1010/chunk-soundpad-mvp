@@ -48,10 +48,17 @@ h1 { font-size: 18px; margin-top: 4px; }
 .pass-dot { width: 18px; height: 18px; border-radius: 50%; background: #2a2a30; border: 1px solid #444; }
 .pass-dot.is-complete { background: #7dd3a8; border-color: #7dd3a8; }
 .commands { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.cmd-btn { min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 12px; border: 1px solid #2a2a30; background: #1c1c21; color: #fff; padding: 12px; cursor: pointer; text-align: left; }
+.flow-cap { grid-column: 1 / -1; text-align: center; font-size: 11px; color: #777; letter-spacing: .08em; }
+.cmd-btn { position: relative; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 12px; border: 1px solid #2a2a30; background: #1c1c21; color: #fff; padding: 12px; cursor: pointer; text-align: left; }
 .cmd-btn b { display: block; font-size: 12px; }
 .cmd-btn i { display: block; font-style: normal; font-family: monospace; font-size: 9px; color: #999; margin-top: 4px; }
 .cmd-btn.is-active { border-color: #e0a458; }
+.step-badge { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; background: #2a2a30; color: #999; }
+.cmd-btn.is-next { border-color: #7dd3a8; animation: nextPulse 1.6s infinite ease-in-out; }
+.cmd-btn.is-next .step-badge { background: #7dd3a8; color: #121214; }
+.cmd-btn.is-done .step-badge { background: transparent; color: #7dd3a8; font-size: 0; }
+.cmd-btn.is-done .step-badge::after { content: "✓"; font-size: 13px; }
+@keyframes nextPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(125,211,168,.0); } 50% { box-shadow: 0 0 0 3px rgba(125,211,168,.35); } }
 .manual { margin-top: 12px; width: 100%; border: 1px dashed rgba(255,184,0,.6); background: rgba(255,184,0,.08); color: #ffb800; padding: 12px; font-size: 14px; cursor: pointer; }
 .tones { margin-top: 24px; border-top: 1px solid #2a2a30; padding-top: 20px; }
 .tones-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }

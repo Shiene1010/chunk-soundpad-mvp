@@ -31,7 +31,7 @@ const PATTERNS = [
 ];
 const WHISPERS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
-const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false };
+const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false, didPlay: false, didTrain: false };
 let audioCtx = null;
 let rec = null;
 let restarting = false;
@@ -148,6 +148,12 @@ function render() {
   $("btn-play").classList.toggle("is-active", state.mode === "tts" && state.step === null);
   $("btn-train").classList.toggle("is-active", state.mode === "train");
   $("btn-test").classList.toggle("is-active", state.mode === "stt");
+  // 흐름 안내: 완료→✓, 다음 행동→펄스. 잠그지 않고 권장만 표시
+  const nextCmd = !state.didPlay ? "btn-play" : !state.didTrain ? "btn-train" : (!isMastered ? "btn-test" : null);
+  ["btn-play", "btn-train", "btn-test"].forEach((id) => $(id).classList.toggle("is-next", id === nextCmd));
+  $("btn-play").classList.toggle("is-done", state.didPlay);
+  $("btn-train").classList.toggle("is-done", state.didTrain);
+  $("btn-test").classList.toggle("is-done", isMastered);
   $("btn-manual").classList.toggle("hidden", state.mode !== "stt");
   $("tone-lock").textContent = isMastered ? "✨" : "🔒";
   $("tone-note").style.display = isMastered ? "none" : "";
@@ -313,6 +319,7 @@ async function playSentence() {
   await ensureAudio(); await delay(500);
   await seq([261.63, 329.63, 392], 100);
   await speak(S().text);
+  state.didPlay = true;
   state.mode = "idle"; say("다시 듣거나, 뒤에서부터 연결해 보세요"); render();
 }
 
@@ -325,6 +332,7 @@ async function trainBackward() {
     await speak(steps[i].text);
     if (i < steps.length - 1) { await heartbeat(); await delay(1200); }
   }
+  state.didTrain = true;
   state.mode = "idle"; say("세 덩어리가 하나로 연결됐어요"); render();
 }
 
@@ -345,6 +353,7 @@ function resetSession() {
   if (audioCtx && audioCtx.state !== "closed") audioCtx.close().catch(() => undefined);
   audioCtx = null;
   state.mode = "idle"; state.pass = 0; state.step = null; state.tone = null;
+  state.didPlay = false; state.didTrain = false;
   state.fallback = false; state.audioReady = false;
   say("화면을 한 번 터치해 소리를 깨워주세요");
   render();

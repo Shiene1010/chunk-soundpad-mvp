@@ -670,19 +670,6 @@ async function loadBundled(manual = false) {
   } catch { if (manual) showToast("폴더 읽기 실패"); }
 }
 
-async function loadPreset(url) {
-  try {
-    const r = await fetch(url);
-    if (!r.ok) throw 0;
-    const lib = JSON.parse(await r.text());
-    const bad = validateLibrary(lib);
-    if (bad) throw 0;
-    const ierr = await verifyLibrary(lib);
-    if (ierr) { showToast(ierr); return; }
-    await addLibraryEntries(lib.entries, lib.title || lib.name);
-  } catch { showToast("불러오기 실패: 파일 선택을 이용하세요"); }
-}
-
 function importPack() {
   const msg = $("import-msg");
   const raw = $("import-text").value.trim();
@@ -744,7 +731,7 @@ $("btn-reset").addEventListener("click", resetSession);
 $("btn-manual").addEventListener("click", () => void registerPass());
 $("btn-peek").addEventListener("click", () => { state.peeked = true; say("글로 확인했어요. 소리로 다시 외워보세요"); render(); });
 document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
-document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => void loadPreset(b.dataset.preset)));
+$("btn-reload-lib").addEventListener("click", () => void loadBundled(true));
 $("file-md").addEventListener("change", (e) => {
   const files = Array.from(e.target.files || []).filter((f) => /\.clib\.json$/i.test(f.name));
   if (!files.length) { showToast("라이브러리(.clib.json)만 가능"); e.target.value = ""; return; }
@@ -775,3 +762,4 @@ document.addEventListener("visibilitychange", () => {
 });
 
 render();
+void loadBundled();

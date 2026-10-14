@@ -32,3 +32,27 @@
 ## T5. 검증·푸시 (S)
 - `node --check`, 헤드리스 콘솔 0에러, 서빙 200, `.env` 미추적, 커밋·푸시.
 - 순서: T0 → T1·T2 → T3 → T4 → T5. 의존성: T3는 T0 결정 참조(아이콘).
+
+# Sprint 2 — 폴더 기반 라이브러리 (타겟표현01 단일 데이터셋)
+
+> 방향: `expressions/`는 기존 타겟표현01 데이터셋만. 임포트는 이 폴더에서.
+> 내장 문장은 `file://` 폴백으로 유지, 폴더본과 텍스트 기준 dedupe.
+
+## T0. 폴더 단일화 (S)
+- `expressions/`에 남길 것: `roald-dahl-01.md` (내장 문장과 동일 내용, MD 정본) + `library.clib.json` (봉인 빌드) + `README.md` (포맷).
+- 제거: `early-bird-01.md`, `practice-makes-perfect-01.md`, `starter.clib.json` (샘플은 라이브러리 성장 후 별도 팩으로).
+- 완료: 폴더 = 타겟01만. `agents_check` 표현식 1팩.
+
+## T1. 폴더 자동로드 (S)
+- 시작 시 `fetch('expressions/library.clib.json')` → 검증 → dedupe 병합. 실패 시 조용히 내장만 (`file://` 대응).
+- 프리셋 버튼 교체: "폴더 라이브러리 다시 읽기" 1개.
+- 파일: `app.js`, `index.html` (프리셋부).
+- 완료: localhost에서 폴더본 로드 확인, 중복 없음.
+
+## T2. 사용자 clib 공유 유지 (S)
+- 파일 선택·내보내기·MD 묶기는 공유 경로로 유지 (D9 그대로).
+- 문구 정리: "공유받기/공유하기"로 라벨 변경해 폴더 임포트와 구분.
+- 완료: 두 경로 명칭 충돌 없음.
+
+## T3. 검증·문서·푸시 (S)
+- `node --check`, 헤드리스 0에러, `agents_check` DRIFT 0, plan D10 기록, AGENTS §6 동기화, 푸시.

@@ -37,12 +37,11 @@
 - `node --check`는 문법만 검사. **반드시 헤드리스 크롬 콘솔 확인**:
   `Google Chrome --headless=new --dump-dom` + `CONSOLE` 에러 grep
 
-## 6. 표현 라이브러리 (D9, Frictionless 축소판)
+## 6. 표현 라이브러리 (D9, D10, Frictionless 축소판)
 - 직접 MD/JSON 임포트 금지. 출입은 `chunk-soundpad-library v1`(`.clib.json`)만
-- 형식: 디스크립터(format/version/name/title/created) + 인라인 `entries` + 선택 `sha256`
-- 검증: 태그·버전·개수(1~50)·개별 팩·id/문장 중복·200KB 상한. sha 불일치 시 거부
-- MD는 작성용(`expressions/*.md`) → 내정보 'MD 묶어서 다운로드'로 clib화 → 파일 선택으로 가져오기
-- 샘플: `expressions/starter.clib.json`. 내보내기는 내 PACKS를 seal 후 다운로드
+- `expressions/`는 타겟표현01 단일 데이터셋. 시작 시 `library.clib.json` 자동로드
+- 내장 문장은 `file://` 폴백. 폴더본과 텍스트 기준 dedupe
+- 공유 입출(파일 선택·내보내기·MD 묶기)은 라벨로 구분, 형식 게이트 동일
 
 ## 7. Git 워크플로
 - `main` 직푸시 (1인 MVP). 커밋 메시지: `<영역>: <내용>` (예: `Sprint1 T0-T2: ...`)

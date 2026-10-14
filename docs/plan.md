@@ -13,6 +13,7 @@
 - **D7 5모드**: M1 듣기 → M2 말하기 → M3 조립 → M4 형태 → M5 활용. M2·M3 엔진 통일(오디오 N회+카운트, 설정만 다름).
 - **D8 아이콘**: 크롬(탭·버튼)은 lucide 인라인 SVG로 통일, 톤 얼굴 이모지는 콘텐츠라 유지. F7 Icons 차순위(iOS풍이나 세트 중복 회피). 교체는 후속.
 - **D9 라이브러리 형식**: 직접 MD/JSON 임포트 금지. `chunk-soundpad-library v1`(.clib.json)만 출입 — 디스크립터+인라인 entries+sha256(Frictionless 축소판). MD는 작성용, 묶기 변환기로 clib화.
+- **D10 폴더 단일화**: `expressions/`는 타겟표현01만. 시작 시 `library.clib.json` 자동로드(내장과 텍스트 dedupe, `file://`는 내장 폴백). 공유 입출은 라벨로 구분.
 
 ## 2. 구현됨
 

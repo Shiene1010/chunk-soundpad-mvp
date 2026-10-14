@@ -24,7 +24,7 @@
 - [x] D1, D2, D3, D4
 - [x] Speak-once 5변경: 순서 PLAY→TEST→TRAIN, "틀려도 돼요", 첫 패스 축제+기록, 형태 엿보기(👀 글자로 확인하기), 기록 저장소(`cspm-stats-v1`)
 - [x] 4탭: 듣기연습/형태/기록/내정보 + 탭바 + 뷰 라우터 + 문장 선택기 + 라이브러리 임포트 + 느리게/안내음성 설정
-- [x] GitHub 푸시 (`main`, .env 미추적)
+- [x] GitHub Pages 배포 (`https://shiene1010.github.io/chunk-soundpad-mvp/`, main 루트, `.nojekyll`)
 
 ## 3. 승인 대기 (스펙 완료)
 

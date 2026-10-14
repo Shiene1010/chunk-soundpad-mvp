@@ -47,8 +47,9 @@ def main() -> int:
          f"docs:plan D-numbers sequential {nums if nums else 'none'}")
 
     sprint = (ROOT / "docs/sprint.md").read_text(encoding="utf-8") if (ROOT / "docs/sprint.md").is_file() else ""
-    ts = re.findall(r"^## (T\d+)\.", sprint, re.M)
-    note(len(ts) == len(set(ts)), f"docs:sprint task ids unique {ts if ts else 'none'}")
+    ts = re.findall(r"^## (?:S\d+-)?(T\d+)\.", sprint, re.M)
+    sprint_ids = re.findall(r"^## ((?:S\d+-)?T\d+)\.", sprint, re.M)
+    note(len(sprint_ids) == len(set(sprint_ids)), f"docs:sprint task ids unique {sprint_ids if sprint_ids else 'none'}")
 
     mds = sorted((ROOT / "expressions").glob("*.md")) if (ROOT / "expressions").is_dir() else []
     ok_md = True

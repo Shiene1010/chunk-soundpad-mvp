@@ -94,7 +94,9 @@ function speak(text, { pitch = 1, rate = 0.92, volume = 1 } = {}) {
     if (!("speechSynthesis" in window)) return resolve();
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US"; u.pitch = pitch; u.rate = rate; u.volume = volume;
+    // 한글 안내는 한국어 음성으로, 영어 문장은 영어 음성으로 (고정 en-US가 괴상한 발음의 원인)
+    u.lang = /[가-힣]/.test(text) ? "ko-KR" : "en-US";
+    u.pitch = pitch; u.rate = rate; u.volume = volume;
     u.onend = () => resolve(); u.onerror = () => resolve();
     window.speechSynthesis.speak(u);
   });

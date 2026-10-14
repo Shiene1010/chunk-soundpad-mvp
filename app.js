@@ -32,7 +32,7 @@ const PATTERNS = [
 ];
 const WHISPERS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
-const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false, didPlay: false, didTrain: false, peeked: false, view: "listen", slow: false, guideVoice: true };
+const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false, didPlay: false, didTrain: false, peeked: false, view: "listen", slow: false, guideVoice: true, checking: false };
 let audioCtx = null;
 let rec = null;
 let restarting = false;
@@ -323,13 +323,20 @@ function renderMe() {
   const slow = $("set-slow"), guide = $("set-guide");
   slow.textContent = state.slow ? "켬" : "끔";
   slow.setAttribute("aria-pressed", String(state.slow));
+  const getBtn = $("btn-get-expressions");
+  getBtn.disabled = state.checking;
+  getBtn.textContent = state.checking ? "확인 중…" : "표현 가져오기";
   guide.textContent = state.guideVoice ? "켬" : "끔";
   guide.setAttribute("aria-pressed", String(state.guideVoice));
   const list = $("pack-list");
   list.innerHTML = "";
+  const libMsg = $("lib-status");
   if (PACKS.length === 0) {
-    const p = document.createElement("p"); p.className = "tone-note"; p.textContent = "가져온 표현이 없어요";
+    libMsg.textContent = "아직 가져온 표현이 없어요. 아래 버튼으로 가져오세요";
+    const p = document.createElement("p"); p.className = "tone-note"; p.textContent = "비어 있음";
     list.append(p);
+  } else {
+    libMsg.textContent = `로드됨 ${PACKS.length}개` + (storedSha() ? "" : " (sha 미기록)");
   }
   PACKS.forEach((p, i) => {
     const r = document.createElement("div"); r.className = "hist-row";
@@ -633,22 +640,37 @@ async function addLibraryEntries(entries, label) {
 }
 
 const BUNDLED_LIB = "expressions/sample-library.clib.json";
+const LIB_SHA_KEY = "cspm-lib-sha";
+
+function storedSha() { try { return localStorage.getItem(LIB_SHA_KEY); } catch { return null; } }
+function storeSha(s) { if (s) { try { localStorage.setItem(LIB_SHA_KEY, s); } catch { /* noop */ } } }
 
 async function loadBundled(manual = false) {
+  if (state.checking) return "busy";
+  state.checking = true;
+  if (manual) render();
+  const done = (status, msg) => {
+    state.checking = false;
+    if (manual && msg) showToast(msg);
+    render();
+    return status;
+  };
   try {
     const r = await fetch(BUNDLED_LIB);
     if (!r.ok) throw 0;
     const lib = JSON.parse(await r.text());
     const bad = validateLibrary(lib);
-    if (bad) { if (manual) showToast(bad); return; }
+    if (bad) return done("invalid", bad);
     const ierr = await verifyLibrary(lib);
-    if (ierr) { if (manual) showToast(ierr); return; }
+    if (ierr) return done("invalid", ierr);
     const fresh = lib.entries.filter((e) => !ALL().some((x) => x.text === e.text));
-    if (!fresh.length) { if (manual) showToast("최신 상태"); return; }
+    storeSha(lib.sha256 || null);
+    if (!fresh.length) return done("uptodate", "최신 상태");
     PACKS.push(...fresh); savePacks(PACKS);
-    if (manual) showToast(fresh.length + "개 가져옴");
-    render();
-  } catch { if (manual) showToast("폴더 읽기 실패"); }
+    return done("added", fresh.length + "개 가져옴");
+  } catch {
+    return done("failed", "폴더 읽기 실패: localhost:8080으로 여세요");
+  }
 }
 
 $("btn-start").addEventListener("click", () => void startSession(false));

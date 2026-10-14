@@ -3,7 +3,7 @@
   "version": 1,
   "name": "target-01",
   "title": "타겟표현01",
-  "created": "2026-10-14T10:53:58.349Z",
+  "created": "2026-10-14T12:22:12.852Z",
   "entries": [
     {
       "id": "roald_dahl_chunk_01",
@@ -12,23 +12,70 @@
       "ipa": "[aɪ wʊd həv bɪn ˈeɪbəl tu meɪk ɪt ˈɪntu ə ˈɡrʌbər ɔːl ˈoʊvər əˈɡen]",
       "chunks": [
         {
+          "section": "01",
+          "items": [],
           "text": "I would have been able to",
           "ipa": "[aɪ wʊd həv bɪn ˈeɪbəl tu]",
           "hint": "내가 ~할 수 있었을 텐데 (호흡 시작 마디)"
         },
         {
+          "section": "02",
+          "items": [],
           "text": "make it into a grubber",
           "ipa": "[meɪk ɪt ˈɪntu ə ˈɡrʌbər]",
           "hint": "그것을 제과점으로 변모시키는 것을 (동사부 연결마디)"
         },
         {
+          "section": "03",
+          "items": [],
           "text": "all over again.",
           "ipa": "[ɔːl ˈoʊvər əˈɡen]",
           "hint": "처음부터 완전히 다시 (억양 매듭마디)"
         }
       ],
-      "tones": []
+      "tones": [
+        {
+          "key": "imperative",
+          "emoji": "📢",
+          "label": "명령",
+          "pitch": 1.05,
+          "rate": 1,
+          "text": "Make it into a grubber all over again!"
+        },
+        {
+          "key": "interrogative",
+          "emoji": "❓",
+          "label": "의문",
+          "pitch": 1.12,
+          "rate": 0.95,
+          "text": "Would I have been able to make it into a grubber all over again?"
+        },
+        {
+          "key": "exclamatory",
+          "emoji": "🔥",
+          "label": "감탄",
+          "pitch": 1.15,
+          "rate": 1.05,
+          "text": "Yes! I would have been able to make it into a grubber all over again!"
+        },
+        {
+          "key": "surprised",
+          "emoji": "😲",
+          "label": "놀람",
+          "pitch": 1.25,
+          "rate": 1.15,
+          "text": "Oh my! I would have been able to make it into a grubber all over again?!"
+        },
+        {
+          "key": "sarcastic",
+          "emoji": "😏",
+          "label": "비꼼",
+          "pitch": 0.85,
+          "rate": 0.82,
+          "text": "Oh, sure... I would have been able to make it into a grubber all over again..."
+        }
+      ]
     }
   ],
-  "sha256": "6c1aba89da7f09be1e76321fe84eb6ed9374b05f41c043e47fe11e5bf05dcb6f"
+  "sha256": "c15556a86d4ee2b70de03f4621b5ee1c52ca8b2b3dd68385c259fa1cb37e6fa7"
 }

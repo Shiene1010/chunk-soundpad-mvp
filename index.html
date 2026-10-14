@@ -39,7 +39,7 @@
 <p class="heard" id="heard" aria-live="polite">화면을 한 번 터치해 소리를 깨워주세요</p>
 </section>
 
-<section class="passes" aria-label="여섯 번 발화 진행도">
+<section class="passes hidden" id="passes-section" aria-label="여섯 번 발화 진행도">
 <div class="passes-head"><div><p class="kicker">Blind passes</p><p class="passes-title">소리만으로 6번 연결하기</p></div>
 <p class="count"><span id="pass-num">0</span>/6</p></div>
 <div class="dots" id="dots"></div>
@@ -53,10 +53,9 @@
 </section>
 <button type="button" id="btn-manual" class="manual hidden">마이크가 듣지 못했나요? 터치로 인증하기</button>
 
-<section class="tones" id="tone-section" aria-label="5가지 감정 톤">
+<section class="tones hidden" id="tone-section" aria-label="5가지 감정 톤">
 <div class="tones-head"><div><p class="kicker">5-tone story voice</p><h2>구연동화 톤 변주</h2></div><span id="tone-lock">🔒</span></div>
 <div class="tone-grid" id="tone-grid"></div>
-<p class="tone-note" id="tone-note">6번의 블라인드 발화를 마치면 열립니다</p>
 </section>
 
 <a id="cafe-link" class="cafe hidden" href="https://cafe.daangn.com/aideul-yeong-eo?utm_medium=copy_link" target="_blank" rel="noopener noreferrer">동명당근카페 인증 게시판에 글 쓰러 가기</a>

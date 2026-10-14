@@ -168,6 +168,8 @@ function render() {
   $("status").textContent = state.listening ? "듣고 있어요... 말씀하세요" : LABELS[state.mode];
   $("tap-hint").style.display = state.mode === "idle" && !state.listening ? "" : "none";
   $("pass-num").textContent = String(state.pass);
+  $("passes-section").classList.toggle("hidden", !(state.mode === "stt" || state.pass > 0));
+  $("tone-section").classList.toggle("hidden", !isMastered);
   $("btn-play").classList.toggle("is-active", state.mode === "tts" && state.step === null);
   $("btn-train").classList.toggle("is-active", state.mode === "train");
   $("btn-test").classList.toggle("is-active", state.mode === "stt");
@@ -184,7 +186,6 @@ function render() {
   document.querySelector(".passes").style.display = empty ? "none" : "";
   $("tone-section").style.display = empty ? "none" : "";
   $("tone-lock").textContent = isMastered ? "✨" : "🔒";
-  $("tone-note").style.display = isMastered ? "none" : "";
   $("cafe-link").classList.toggle("hidden", !isMastered);
 
   const dots = $("dots");
@@ -518,21 +519,32 @@ function parseMD(src) {
   }
   let text = "", ipa = "";
   const chunks = [];
+  let tones = [];
   let cur = null;
-  const flush = () => { if (cur && cur.text) chunks.push(cur); cur = null; };
+  const flush = () => {
+    if (!cur) return;
+    if (cur.section === "tones") tones = cur.items;
+    else if (cur.text) chunks.push(cur);
+    cur = null;
+  };
   for (; i < lines.length; i++) {
     const ln = lines[i];
     if (ln.startsWith("# ")) text = ln.slice(2).trim();
     else if (ln.startsWith("> ")) ipa = ln.slice(2).trim();
-    else if (ln.startsWith("## ")) { flush(); cur = {}; }
+    else if (ln.startsWith("## ")) { flush(); cur = { section: ln.slice(3).trim().toLowerCase(), items: [] }; }
     else if (cur) {
-      const m = ln.match(/^(text|ipa|hint|image):\s*(.*)$/);
-      if (m) cur[m[1]] = m[2].trim();
+      if (cur.section === "tones") {
+        const parts = ln.split("|").map((x) => x.trim()).filter((x) => x);
+        if (parts.length >= 6) cur.items.push({ key: parts[0], emoji: parts[1], label: parts[2], pitch: parseFloat(parts[3]) || 1, rate: parseFloat(parts[4]) || 1, text: parts.slice(5).join("|").trim() });
+      } else {
+        const m = ln.match(/^(text|ipa|hint|image):\s*(.*)$/);
+        if (m) cur[m[1]] = m[2].trim();
+      }
     }
   }
   flush();
   if (!text || chunks.length === 0) return null;
-  return { id: meta.id || ("md_" + Date.now()), level: meta.level || "beginner", text, ipa, chunks, tones: [] };
+  return { id: meta.id || ("md_" + Date.now()), level: meta.level || "beginner", text, ipa, chunks, tones };
 }
 
 function validPack(obj) {

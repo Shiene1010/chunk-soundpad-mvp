@@ -24,6 +24,9 @@ hint: Korean gloss (마디 suffix, see §2)
 Rules: front-matter is `---` fence, flat `key: value` lines only. One `# ` line
 (sentence), one `> ` line (IPA). Each chunk is `## NN` (zero-padded, 01-up) then
 `text:`/`ipa:`/`hint:` lines (`image:` optional, omit when none). No extra keys.
+Optional `## tones` section LAST: one line per tone,
+`key | emoji | label | pitch | rate | text` (e.g. `imperative | 📢 | 명령 | 1.05 | 1.0 | ...`).
+Slot 1 is imperative, never declarative.
 
 ## 2. Chunking rules (2–4 chunks)
 
@@ -48,6 +51,7 @@ node -e 'const fs=require("fs");const a=fs.readFileSync("/Volumes/Crucial X6/Dev
 ```
 
 Pass = prints `{"text":"...","chunks":N,"valid":true}` with N = chunk count.
+Also verify `tones:5` with slot 1 `key:imperative` when a `## tones` section exists.
 Fail (`null`/`valid:false`) → fix MD, never the parser. Also run `node --check app.js`
 (grammar only; app code itself is never edited by authors).
 

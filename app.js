@@ -101,7 +101,7 @@ function stopRec() {
 function render() {
   const isMastered = state.pass >= 6 || state.mode === "mastered";
   $("cmd-text").textContent = `“${COMMAND_TEXT[state.mode]}”`;
-  $("cue-text").textContent = state.mode === "idle" ? "🗣️ 위 문장 전체 소리를 들으려면 이렇게 말해보세요:" : "🎧 지금은 이 안내를 따라가세요:";
+  $("cue-text").textContent = !isMastered && state.mode === "idle" ? "🙈 문장은 가려져 있어요. 소리로 먼저 들어보세요:" : state.mode === "idle" ? "🗣️ 위 문장 전체 소리를 들으려면 이렇게 말해보세요:" : "🎧 지금은 이 안내를 따라가세요:";
   $("guidance").style.display = isMastered ? "none" : "";
   $("orb").className = `orb state-${state.mode}${state.listening ? " is-listening" : ""}`;
   $("pip").className = `pip${state.mode === "stt" || state.listening ? " is-live" : ""}`;
@@ -134,7 +134,34 @@ function render() {
   const body = $("board-body");
   body.innerHTML = "";
   const steps = backwardSteps();
-  if (state.step !== null && steps[state.step]) {
+  const revealed = state.pass >= 6 || state.mode === "mastered";
+  if (!revealed && state.step !== null && steps[state.step]) {
+    // 블라인드 퍼스트: 훈련 중에도 영어 텍스트·IPA 미공개, 단계+한글 힌트만
+    const s = steps[state.step];
+    const tag = document.createElement("div");
+    tag.innerHTML = `<span class="step-tag">${s.step}</span><span class="kicker">뒤에서부터 연결</span>`;
+    const cover = document.createElement("p");
+    cover.className = "cover-line";
+    cover.textContent = "🙈 소리로 먼저 들으세요";
+    const hint = document.createElement("p");
+    hint.className = "ipa"; hint.textContent = s.hint;
+    const box = document.createElement("div");
+    box.append(tag, cover, hint); body.append(box);
+  } else if (!revealed) {
+    // 블라인드 퍼스트: 타겟 문장 가리고 시작, 통과 후 공개
+    const cover = document.createElement("p");
+    cover.className = "cover-line";
+    cover.textContent = "🙈 문장이 가려져 있어요. 소리로 먼저 들어보세요";
+    const hints = document.createElement("div");
+    hints.className = "hints";
+    S().chunks.forEach((c, i) => {
+      const h = document.createElement("p");
+      h.innerHTML = `<span>0${i + 1}</span>`;
+      h.append(document.createTextNode(c.hint));
+      hints.append(h);
+    });
+    body.append(cover, hints);
+  } else if (state.step !== null && steps[state.step]) {
     const s = steps[state.step];
     const tag = document.createElement("div");
     tag.innerHTML = `<span class="step-tag">${s.step}</span><span class="kicker">뒤에서부터 연결</span>`;
@@ -174,9 +201,9 @@ function render() {
 function backwardSteps() {
   const s = S();
   return [
-    { text: s.chunks[2].text, ipa: s.chunks[2].ipa, step: "01" },
-    { text: `${s.chunks[1].text} ${s.chunks[2].text}`, ipa: `${s.chunks[1].ipa} ${s.chunks[2].ipa}`, step: "02" },
-    { text: s.text, ipa: s.ipa, step: "03" },
+    { text: s.chunks[2].text, ipa: s.chunks[2].ipa, step: "01", hint: s.chunks[2].hint },
+    { text: `${s.chunks[1].text} ${s.chunks[2].text}`, ipa: `${s.chunks[1].ipa} ${s.chunks[2].ipa}`, step: "02", hint: `${s.chunks[1].hint} + ${s.chunks[2].hint}` },
+    { text: s.text, ipa: s.ipa, step: "03", hint: "전체 문장 소리" },
   ];
 }
 

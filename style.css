@@ -30,6 +30,7 @@ h1 { font-size: 18px; margin-top: 4px; }
 .chunk-board { border-top: 1px solid #2a2a30; border-bottom: 1px solid #2a2a30; padding: 20px 0; position: relative; }
 .board-head { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 10px; color: #999; }
 .ba { color: #e0a458; font-weight: 600; }
+#board-body .cover-line { font-size: 19px; font-weight: 700; line-height: 1.4; color: #e0a458; }
 #board-body .sentence { font-size: 27px; font-weight: 700; line-height: 1.2; }
 #board-body .step-tag { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid rgba(224,164,88,.5); font-size: 10px; color: #e0a458; margin-right: 8px; }
 #board-body .ipa { margin-top: 12px; font-family: monospace; font-size: 13px; color: #7dd3a8; }

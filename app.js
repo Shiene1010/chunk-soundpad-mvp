@@ -25,6 +25,18 @@ const err = { nospeech: 0, net: 0 };
 const SELF_VOICE = ["one", "two", "three", "four", "five", "six", "well done", "well done you did it"];
 // 북극성 지표 저장소 (기록 탭 재료): firstPassAt, totalPasses, sessions
 const STATS_KEY = "cspm-stats-v1";
+const PROG_KEY = "cspm-progress-v1";
+let PROG = {};
+try { PROG = JSON.parse(localStorage.getItem(PROG_KEY)) || {}; } catch { PROG = {}; }
+function progKey() { const s = S(); return (s && s.id) || ("ix" + state.sentence); }
+function saveProg() {
+  PROG[progKey()] = { pass: state.pass, didPlay: state.didPlay, didTrain: state.didTrain };
+  try { localStorage.setItem(PROG_KEY, JSON.stringify(PROG)); } catch { /* noop */ }
+}
+function loadProg() {
+  const p = PROG[progKey()] || { pass: 0, didPlay: false, didTrain: false };
+  state.pass = p.pass || 0; state.didPlay = !!p.didPlay; state.didTrain = !!p.didTrain;
+}
 const PACKS_KEY = "cspm-packs-v1";
 function loadStats() { try { return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch { return {}; } }
 function saveStats(s) { try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch { /* private mode */ } }
@@ -62,7 +74,10 @@ async function ensureAudio() {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return null;
   if (!audioCtx) audioCtx = new AC();
-  if (audioCtx.state === "suspended") await audioCtx.resume();
+  if (audioCtx.state === "suspended") {
+    // resume 무한 대기 방지 (제스처 미인정 환경 대비 1.5s 상한)
+    try { await Promise.race([audioCtx.resume(), delay(1500)]); } catch { /* suspended 유지 */ }
+  }
   state.audioReady = true;
   return audioCtx;
 }
@@ -143,6 +158,16 @@ function stopRec() {
   rec = null;
 }
 
+function selectSentence(i) {
+  if (i === state.sentence) return;
+  saveProg();
+  state.sentence = i;
+  state.pass = 0; state.step = null; state.didPlay = false; state.didTrain = false;
+  if (state.mode !== "idle") { stopRec(); state.mode = "idle"; }
+  loadProg();
+  render();
+}
+
 function showView(v) {
   state.view = v;
   const apply = () => render();
@@ -164,6 +189,7 @@ function render() {
   if (state.view === "history") renderHistory();
   if (state.view === "me") renderMe();
   if (state.view !== "listen") return;
+  renderSeg();
   const steps = backwardSteps();
   const stepInfo = state.mode === "train" && state.step !== null && steps[state.step]
     ? `뒤에서부터 연결 ${steps[state.step].step} · ${steps[state.step].hint}` : null;
@@ -216,6 +242,21 @@ function render() {
 
 }
 
+function renderSeg() {
+  const seg = $("sentence-seg");
+  seg.innerHTML = "";
+  seg.classList.toggle("hidden", ALL().length < 2);
+  if (ALL().length < 2) return;
+  ALL().forEach((item, i) => {
+    const done = (PROG[item.id || ("ix" + i)] || {}).pass >= 6;
+    const b = h("button", `pick${i === state.sentence ? " is-on" : ""}`, `문장 0${i + 1}${done ? " ✓" : ""}`);
+    b.type = "button";
+    b.title = item.text;
+    b.addEventListener("click", () => selectSentence(i));
+    seg.append(b);
+  });
+}
+
 function renderForm() {
   const box = $("form-cards");
   box.innerHTML = "";
@@ -232,10 +273,11 @@ function renderForm() {
   const picker = $("sentence-picker");
   picker.innerHTML = "";
   ALL().forEach((item, i) => {
-    const b = h("button", `pick${i === state.sentence ? " is-on" : ""}`, `문장 0${i + 1}`);
+    const done = (PROG[item.id || ("ix" + i)] || {}).pass >= 6;
+    const b = h("button", `pick${i === state.sentence ? " is-on" : ""}`, `문장 0${i + 1}${done ? " ✓" : ""}`);
     b.type = "button";
     b.title = item.text;
-    b.addEventListener("click", () => { state.sentence = i; state.pass = 0; state.step = null; state.didPlay = false; state.didTrain = false; if (state.mode !== "idle") { stopRec(); state.mode = "idle"; } render(); });
+    b.addEventListener("click", () => selectSentence(i));
     picker.append(b);
   });
   const full = h("p", "form-full", s.text);
@@ -284,10 +326,12 @@ function renderHistory() {
   const st = loadStats();
   const box = $("history-body");
   box.innerHTML = "";
+  const doneCount = ALL().filter((item, i) => ((PROG[item.id || ("ix" + i)] || {}).pass || 0) >= 6).length;
   const rows = [
     ["첫 말하기", st.firstPassAt ? new Date(st.firstPassAt).toLocaleString() + " 🎉" : "아직 없어요. 첫 소리를 내보세요"],
     ["통산 발화", String(st.totalPasses || 0) + "회"],
     ["세션", String(st.sessions || 0) + "회"],
+    ["완료 문장", `${doneCount}/${ALL().length}문장`],
   ];
   rows.forEach(([k, v]) => {
     const r = h("div", "hist-row");
@@ -359,6 +403,7 @@ function showToast(msg, ms = 1600) {
 async function registerPass() {
   if (state.pass >= 6) return;
   state.pass += 1;
+  saveProg();
   const st = loadStats();
   st.totalPasses = (st.totalPasses || 0) + 1;
   if (!st.firstPassAt) st.firstPassAt = new Date().toISOString();
@@ -434,6 +479,7 @@ async function playSentence() {
   await seq([261.63, 329.63, 392], 100);
   await speak(S().text, { rate: state.slow ? 0.65 : 0.92 });
   state.didPlay = true;
+  saveProg();
   state.mode = "idle"; say("다시 듣거나, 뒤에서부터 연결해 보세요"); render();
 }
 
@@ -448,6 +494,7 @@ async function trainBackward() {
     if (i < steps.length - 1) { await heartbeat(); await delay(1200); }
   }
   state.didTrain = true;
+  saveProg();
   state.mode = "idle"; say("세 덩어리가 하나로 연결됐어요"); render();
 }
 
@@ -471,6 +518,7 @@ function resetSession() {
   state.mode = "idle"; state.pass = 0; state.step = null; state.tone = null;
   state.didPlay = false; state.didTrain = false;
   state.fallback = false; state.audioReady = false;
+  saveProg();
   say("화면을 한 번 터치해 소리를 깨워주세요");
   render();
 }
@@ -675,6 +723,7 @@ async function loadBundled(manual = false) {
   const done = (status, msg) => {
     state.checking = false;
     if (manual && msg) showToast(msg);
+    loadProg();
     render();
     return status;
   };
@@ -726,5 +775,6 @@ document.addEventListener("visibilitychange", () => {
   else if (state.started && state.mode === "stt" && state.pass < 6 && !state.fallback) startTestRec();
 });
 
+loadProg();
 render();
 void loadBundled();

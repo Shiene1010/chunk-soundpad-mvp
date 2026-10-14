@@ -651,7 +651,7 @@ async function addLibraryEntries(entries, label) {
   render();
 }
 
-const BUNDLED_LIB = "expressions/library.clib.json";
+const BUNDLED_LIB = "expressions/sample-library.clib.json";
 
 async function loadBundled(manual = false) {
   try {

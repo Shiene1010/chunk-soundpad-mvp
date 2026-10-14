@@ -161,12 +161,11 @@ function render() {
   const stepInfo = state.mode === "train" && state.step !== null && steps[state.step]
     ? `뒤에서부터 연결 ${steps[state.step].step} · ${steps[state.step].hint}` : null;
   $("cmd-text").textContent = `“${COMMAND_TEXT[state.mode]}”`;
-  $("cue-text").textContent = empty ? "표현이 없어요. 내정보에서 가져오세요:" : stepInfo || (!isMastered && state.mode === "idle" ? "🙈 문장은 가려져 있어요. 소리로 먼저 들어보세요:" : state.mode === "idle" ? "🗣️ 위 문장 전체 소리를 들으려면 이렇게 말해보세요:" : "🎧 지금은 이 안내를 따라가세요:");
-  $("guidance").style.display = isMastered ? "none" : "";
+  $("cue-text").textContent = empty ? "표현이 없어요. 내정보에서 가져오세요:" : isMastered ? "🎉 여섯 번 다 했어요. 톤을 눌러보세요:" : stepInfo || (state.mode === "idle" ? "🙈 문장은 가려져 있어요. 소리로 먼저 들어보세요:" : state.mode === "idle" ? "🗣️ 위 문장 전체 소리를 들으려면 이렇게 말해보세요:" : "🎧 지금은 이 안내를 따라가세요:");
   $("orb").className = `orb state-${state.mode}${state.listening ? " is-listening" : ""}`;
   $("pip").className = `pip${state.mode === "stt" || state.listening ? " is-live" : ""}`;
   $("status").textContent = state.listening ? "듣고 있어요... 말씀하세요" : LABELS[state.mode];
-  $("tap-hint").style.display = state.mode === "idle" && !state.listening ? "" : "none";
+  $("tap-hint").style.visibility = state.mode === "idle" && !state.listening ? "visible" : "hidden";
   $("pass-num").textContent = String(state.pass);
   $("passes-section").classList.toggle("hidden", !(state.mode === "stt" || state.pass > 0));
   // 통과 후: 3버튼 자리를 5톤 버튼으로 교체

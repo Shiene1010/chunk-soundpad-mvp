@@ -1,0 +1,6 @@
+# 표현 MD 포맷 (gray-matter / Jekyll front-matter 규격)
+
+- 파일당 1문장. 맨 앞 `---` 펜스 안에 메타(YAML 1단 `key: value`만).
+- 본문: `# 문장`, `> IPA`, `## NN` 덩어리 + `text/ipa/hint/image` 필드.
+- 파서: 내장 `parseMD()` (외부 의존 없음, 오프라인·`file://` 동작).
+- 가져오기: 내정보 탭 → 샘플 버튼(fetch, localhost) / md 파일 선택(FileReader, `file://` 가능) / 텍스트 붙여넣기(MD·JSON 자동 판별).

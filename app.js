@@ -345,8 +345,8 @@ function renderMe() {
 }
 
 function backwardSteps() {
-  const s = S();
-  const n = s.chunks.length;
+  const s = S(), n = s.chunks.length;
+  if (n <= 1) return [{ text: s.text, ipa: s.ipa, step: "01", hint: "전체 문장 소리" }];
   const last = s.chunks[n - 1], prev = s.chunks[n - 2];
   return [
     { text: last.text, ipa: last.ipa, step: "01", hint: last.hint },
@@ -541,17 +541,70 @@ function busy() {
   return false;
 }
 
+// 표현 MD 파서: gray-matter/Jekyll 규격(--- 펜스 + # 문장 + > IPA + ## 덩어리)
+function parseMD(src) {
+  const lines = String(src).replace(/\r\n?/g, "\n").split("\n");
+  let i = 0;
+  const meta = {};
+  if (lines[i] === "---") {
+    i++;
+    while (i < lines.length && lines[i] !== "---") {
+      const m = lines[i].match(/^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/);
+      if (m) meta[m[1]] = m[2].trim();
+      i++;
+    }
+    i++;
+  }
+  let text = "", ipa = "";
+  const chunks = [];
+  let cur = null;
+  const flush = () => { if (cur && cur.text) chunks.push(cur); cur = null; };
+  for (; i < lines.length; i++) {
+    const ln = lines[i];
+    if (ln.startsWith("# ")) text = ln.slice(2).trim();
+    else if (ln.startsWith("> ")) ipa = ln.slice(2).trim();
+    else if (ln.startsWith("## ")) { flush(); cur = {}; }
+    else if (cur) {
+      const m = ln.match(/^(text|ipa|hint|image):\s*(.*)$/);
+      if (m) cur[m[1]] = m[2].trim();
+    }
+  }
+  flush();
+  if (!text || chunks.length === 0) return null;
+  return { id: meta.id || ("md_" + Date.now()), level: meta.level || "beginner", text, ipa, chunks, tones: [] };
+}
+
+function validPack(obj) {
+  return obj && typeof obj.text === "string" && Array.isArray(obj.chunks) && obj.chunks.length > 0 && obj.chunks.every((c) => c && typeof c.text === "string");
+}
+
+async function loadPreset(url) {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw 0;
+    const p = parseMD(await r.text());
+    if (!p) throw 0;
+    if (PACKS.some((x) => x.text === p.text)) { showToast("이미 있어요"); return; }
+    PACKS.push(p); savePacks(PACKS);
+    showToast("가져옴"); render();
+  } catch { showToast("불러오기 실패: 파일 선택을 이용하세요"); }
+}
+
 function importPack() {
   const msg = $("import-msg");
-  let obj;
-  try { obj = JSON.parse($("import-text").value); }
-  catch { msg.textContent = "JSON 파싱 실패. 형식을 확인하세요"; showToast("JSON 파싱 실패"); return; }
-  if (!obj || typeof obj.text !== "string" || !Array.isArray(obj.chunks) || obj.chunks.length === 0 || !obj.chunks.every((c) => c && typeof c.text === "string")) {
-    msg.textContent = "필요: {text, chunks:[{text}]} (hint·ipa 선택)";
+  const raw = $("import-text").value.trim();
+  let obj = null;
+  if (raw.startsWith("---")) obj = parseMD(raw);
+  else {
+    try { obj = JSON.parse(raw); }
+    catch { msg.textContent = "JSON 파싱 실패. 형식을 확인하세요"; showToast("JSON 파싱 실패"); return; }
+  }
+  if (!validPack(obj)) {
+    msg.textContent = "필요: MD(---펜스) 또는 {text, chunks:[{text}]}";
     showToast("형식이 안 맞아요");
     return;
   }
-  obj.id = "pack_" + Date.now();
+  obj.id = obj.id || ("pack_" + Date.now());
   obj.tones = obj.tones || [];
   PACKS.push(obj); savePacks(PACKS);
   $("import-text").value = "";
@@ -570,6 +623,22 @@ $("btn-reset").addEventListener("click", resetSession);
 $("btn-manual").addEventListener("click", () => void registerPass());
 $("btn-peek").addEventListener("click", () => { state.peeked = true; say("글로 확인했어요. 소리로 다시 외워보세요"); render(); });
 document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
+document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => void loadPreset(b.dataset.preset)));
+$("file-md").addEventListener("change", (e) => {
+  const files = Array.from(e.target.files || []).filter((f) => /\.md$/i.test(f.name));
+  if (!files.length) { showToast("md 파일을 선택하세요"); return; }
+  Promise.all(files.map((f) => new Promise((res) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result); r.onerror = () => res(null);
+    r.readAsText(f);
+  }))).then((texts) => {
+    let ok = 0;
+    texts.forEach((t) => { const p = t && parseMD(t); if (p && validPack(p)) { PACKS.push(p); ok++; } });
+    if (ok) { savePacks(PACKS); showToast(ok + "개 가져옴"); }
+    else showToast("파싱 실패");
+    e.target.value = ""; render();
+  });
+});
 $("set-slow").addEventListener("click", () => { state.slow = !state.slow; render(); });
 $("set-guide").addEventListener("click", () => { state.guideVoice = !state.guideVoice; render(); });
 $("btn-import").addEventListener("click", importPack);

@@ -87,8 +87,13 @@
 <div class="set-row"><span>음성 안내</span><button type="button" id="set-guide" class="toggle" aria-pressed="true">켬</button></div>
 <h3 class="lib-title">표현 라이브러리</h3>
 <div id="pack-list"></div>
-<textarea id="import-text" rows="4" placeholder='{"text":"...","chunks":[{"text":"...","hint":"..."}]}'></textarea>
-<button type="button" id="btn-import" class="manual">JSON으로 문장 가져오기</button>
+<textarea id="import-text" rows="4" placeholder='MD 또는 JSON 붙여넣기 (--- 로 시작하면 MD)'></textarea>
+<button type="button" id="btn-import" class="manual">붙여넣기로 문장 가져오기</button>
+<div class="picker" id="preset-list">
+<button type="button" class="pick" data-preset="expressions/early-bird-01.md">샘플: early bird</button>
+<button type="button" class="pick" data-preset="expressions/practice-makes-perfect-01.md">샘플: practice</button>
+</div>
+<label class="file-btn">md 파일 선택<input type="file" id="file-md" accept=".md,.markdown" multiple hidden></label>
 <p class="tone-note" id="import-msg"></p>
 </section>
 

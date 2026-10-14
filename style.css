@@ -64,3 +64,9 @@ h1 { font-size: 18px; margin-top: 4px; }
 .tone-note { margin-top: 12px; text-align: center; font-size: 10px; color: #999; }
 .cafe { margin-top: 20px; display: flex; min-height: 52px; align-items: center; justify-content: center; border: 1px solid #2ecc71; background: rgba(46,204,113,.12); color: #fff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 0 16px; text-align: center; }
 .hidden { display: none !important; }
+#start-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(8,8,10,.96); padding: 24px; }
+.start-card { width: 100%; max-width: 340px; text-align: center; background: #1c1c21; border: 1px solid #333; border-radius: 20px; padding: 32px 24px; }
+.start-card h1 { font-size: 22px; }
+.start-card p { margin-top: 12px; font-size: 14px; line-height: 1.6; color: #bbb; }
+#btn-start { margin-top: 20px; width: 100%; border: none; border-radius: 50px; background: #2ecc71; color: #fff; font-size: 18px; font-weight: 800; padding: 16px; cursor: pointer; }
+.start-note { font-size: 12px !important; color: #777 !important; }

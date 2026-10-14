@@ -31,7 +31,7 @@ const PATTERNS = [
 ];
 const WHISPERS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
-const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false };
+const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false };
 let audioCtx = null;
 let rec = null;
 let restarting = false;
@@ -90,6 +90,38 @@ function speak(text, { pitch = 1, rate = 0.92, volume = 1 } = {}) {
     u.onend = () => resolve(); u.onerror = () => resolve();
     window.speechSynthesis.speak(u);
   });
+}
+
+async function requestMic() {
+  // 시작 오버레이에서 1회: 명시적 권한 팝업으로 마이크 확보, 스트림은 즉시 반납
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((t) => t.stop());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function startSession() {
+  await ensureAudio();
+  const granted = await requestMic();
+  $("start-overlay").classList.add("hidden");
+  state.started = true;
+  if (granted) {
+    say("준비됐어요. 아래 명령을 누르거나 직접 말해보세요");
+    render();
+    if (!state.guided) {
+      state.guided = true;
+      await speak("준비됐어요. 문장은 가려져 있어요. 먼저 소리로 들어보세요.");
+    }
+  } else {
+    state.fallback = true;
+    say("마이크가 안 돼서 버튼으로 인증하세요.");
+    render();
+    await speak("마이크가 안 돼서 버튼으로 인증하세요.");
+  }
 }
 
 function stopRec() {
@@ -348,6 +380,7 @@ function handleOrbTap() {
   render();
 }
 
+$("btn-start").addEventListener("click", () => void startSession());
 $("orb").addEventListener("pointerdown", handleOrbTap);
 $("btn-play").addEventListener("click", () => void playSentence());
 $("btn-train").addEventListener("click", () => void trainBackward());

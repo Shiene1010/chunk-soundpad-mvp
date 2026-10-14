@@ -48,6 +48,11 @@ h1 { font-size: 18px; margin-top: 4px; }
 .pass-dot { width: 18px; height: 18px; border-radius: 50%; background: #2a2a30; border: 1px solid #444; }
 .pass-dot.is-complete { background: #7dd3a8; border-color: #7dd3a8; }
 .commands { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cmd3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.cmd3 .cmd-btn { align-items: flex-start; justify-content: center; gap: 4px; }
+.cmd-btn b { display: block; font-size: 12px; line-height: 1.35; }
+.cmd-btn i { display: block; font-style: normal; font-size: 10px; color: #999; margin-top: 4px; }
+#tone-grid-pass { margin-top: 14px; }
 .flow-cap { grid-column: 1 / -1; text-align: center; font-size: 11px; color: #777; letter-spacing: .08em; }
 .cmd-btn { position: relative; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 12px; border: 1px solid #2a2a30; background: #1c1c21; color: #fff; padding: 12px; cursor: pointer; text-align: left; }
 .cmd-btn b { display: block; font-size: 12px; }

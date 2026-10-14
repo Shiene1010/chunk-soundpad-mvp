@@ -169,7 +169,22 @@ function render() {
   $("tap-hint").style.display = state.mode === "idle" && !state.listening ? "" : "none";
   $("pass-num").textContent = String(state.pass);
   $("passes-section").classList.toggle("hidden", !(state.mode === "stt" || state.pass > 0));
-  $("tone-section").classList.toggle("hidden", !isMastered);
+  // 통과 후: 3버튼 자리를 5톤 버튼으로 교체
+  $("cmd3").classList.toggle("hidden", isMastered);
+  $("tone-grid-pass").classList.toggle("hidden", !isMastered);
+  const tg = $("tone-grid-pass");
+  tg.innerHTML = "";
+  if (isMastered) {
+    (S().tones || []).forEach((t) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = `tone-button${state.tone === t.key ? " is-active" : ""}`;
+      b.setAttribute("aria-label", `${t.label} 톤으로 듣기`);
+      b.innerHTML = `<span style="font-size:24px">${t.emoji}</span><span>${t.label}</span>`;
+      b.addEventListener("click", () => void playEmotion(t));
+      tg.append(b);
+    });
+  }
   $("btn-play").classList.toggle("is-active", state.mode === "tts" && state.step === null);
   $("btn-train").classList.toggle("is-active", state.mode === "train");
   $("btn-test").classList.toggle("is-active", state.mode === "stt");
@@ -181,11 +196,6 @@ function render() {
   $("btn-test").classList.toggle("is-done", isMastered);
   $("btn-manual").classList.toggle("hidden", state.mode !== "stt");
   $("empty-cta-wrap").classList.toggle("hidden", !empty);
-  document.querySelector(".orb-zone").style.display = empty ? "none" : "";
-  document.querySelector(".commands").style.display = empty ? "none" : "";
-  document.querySelector(".passes").style.display = empty ? "none" : "";
-  $("tone-section").style.display = empty ? "none" : "";
-  $("tone-lock").textContent = isMastered ? "✨" : "🔒";
   $("cafe-link").classList.toggle("hidden", !isMastered);
 
   const dots = $("dots");
@@ -200,17 +210,6 @@ function render() {
     w.append(d, n); dots.append(w);
   });
 
-  const grid = $("tone-grid");
-  grid.innerHTML = "";
-  (S().tones || []).forEach((t) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.disabled = !isMastered;
-    b.className = `tone-button${state.tone === t.key ? " is-active" : ""}`;
-    b.setAttribute("aria-label", `${t.label} 톤으로 듣기`);
-    b.innerHTML = `<span style="font-size:24px">${t.emoji}</span><span>${t.label}</span>`;
-    b.addEventListener("click", () => void playEmotion(t));
-    grid.append(b);
-  });
 }
 
 function renderForm() {

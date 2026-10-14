@@ -15,7 +15,7 @@ const PATTERNS = [
 ];
 const WHISPERS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
-const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false, didPlay: false, didTrain: false, peeked: false, view: "listen", slow: false, guideVoice: true, checking: false };
+const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false, didPlay: false, didTrain: false, view: "listen", slow: false, guideVoice: true, checking: false };
 let audioCtx = null;
 let rec = null;
 let restarting = false;
@@ -145,7 +145,7 @@ function showView(v) {
 
 function render() {
   const isMastered = state.pass >= 6 || state.mode === "mastered";
-  const revealed = state.noTts || state.peeked || state.pass >= 6 || state.mode === "mastered";
+  const empty = !hasSentence();
   $("view-title").textContent = VIEW_TITLES[state.view] || "듣기연습";
   document.querySelectorAll(".view").forEach((s) => s.classList.toggle("hidden", s.id !== "view-" + state.view));
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.view === state.view));
@@ -157,16 +157,16 @@ function render() {
   if (state.view === "history") renderHistory();
   if (state.view === "me") renderMe();
   if (state.view !== "listen") return;
+  const steps = backwardSteps();
+  const stepInfo = state.mode === "train" && state.step !== null && steps[state.step]
+    ? `뒤에서부터 연결 ${steps[state.step].step} · ${steps[state.step].hint}` : null;
   $("cmd-text").textContent = `“${COMMAND_TEXT[state.mode]}”`;
-  $("cue-text").textContent = !isMastered && state.mode === "idle" ? "🙈 문장은 가려져 있어요. 소리로 먼저 들어보세요:" : state.mode === "idle" ? "🗣️ 위 문장 전체 소리를 들으려면 이렇게 말해보세요:" : "🎧 지금은 이 안내를 따라가세요:";
+  $("cue-text").textContent = empty ? "표현이 없어요. 내정보에서 가져오세요:" : stepInfo || (!isMastered && state.mode === "idle" ? "🙈 문장은 가려져 있어요. 소리로 먼저 들어보세요:" : state.mode === "idle" ? "🗣️ 위 문장 전체 소리를 들으려면 이렇게 말해보세요:" : "🎧 지금은 이 안내를 따라가세요:");
   $("guidance").style.display = isMastered ? "none" : "";
   $("orb").className = `orb state-${state.mode}${state.listening ? " is-listening" : ""}`;
   $("pip").className = `pip${state.mode === "stt" || state.listening ? " is-live" : ""}`;
   $("status").textContent = state.listening ? "듣고 있어요... 말씀하세요" : LABELS[state.mode];
   $("tap-hint").style.display = state.mode === "idle" && !state.listening ? "" : "none";
-  $("target-label").textContent = hasSentence() ? `Target / 0${state.sentence + 1}` : "Target / -";
-  $("chunk-board").classList.toggle("is-blind", state.mode === "stt");
-  $("blind-cover").classList.toggle("hidden", state.mode !== "stt");
   $("pass-num").textContent = String(state.pass);
   $("btn-play").classList.toggle("is-active", state.mode === "tts" && state.step === null);
   $("btn-train").classList.toggle("is-active", state.mode === "train");
@@ -178,7 +178,11 @@ function render() {
   $("btn-train").classList.toggle("is-done", state.didTrain);
   $("btn-test").classList.toggle("is-done", isMastered);
   $("btn-manual").classList.toggle("hidden", state.mode !== "stt");
-  $("btn-peek").classList.toggle("hidden", revealed);
+  $("empty-cta-wrap").classList.toggle("hidden", !empty);
+  document.querySelector(".orb-zone").style.display = empty ? "none" : "";
+  document.querySelector(".commands").style.display = empty ? "none" : "";
+  document.querySelector(".passes").style.display = empty ? "none" : "";
+  $("tone-section").style.display = empty ? "none" : "";
   $("tone-lock").textContent = isMastered ? "✨" : "🔒";
   $("tone-note").style.display = isMastered ? "none" : "";
   $("cafe-link").classList.toggle("hidden", !isMastered);
@@ -194,69 +198,6 @@ function render() {
     n.textContent = `0${i + 1}`;
     w.append(d, n); dots.append(w);
   });
-
-  const body = $("board-body");
-  body.innerHTML = "";
-  const steps = backwardSteps();
-  if (!hasSentence()) {
-    // 빈 시작: 표현 없이 실행, 가져오기 유도
-    const cover = document.createElement("p");
-    cover.className = "cover-line";
-    cover.textContent = "표현이 없어요. 먼저 가져오세요";
-    const go = document.createElement("button");
-    go.type = "button"; go.className = "manual"; go.textContent = "표현 가져오러 가기";
-    go.addEventListener("click", () => showView("me"));
-    const box = document.createElement("div");
-    box.append(cover, go); body.append(box);
-  } else if (!revealed && state.step !== null && steps[state.step]) {
-    // 블라인드 퍼스트: 훈련 중에도 영어 텍스트·IPA 미공개, 단계+한글 힌트만
-    const s = steps[state.step];
-    const tag = document.createElement("div");
-    tag.innerHTML = `<span class="step-tag">${s.step}</span><span class="kicker">뒤에서부터 연결</span>`;
-    const cover = document.createElement("p");
-    cover.className = "cover-line";
-    cover.textContent = "🙈 소리로 먼저 들으세요";
-    const hint = document.createElement("p");
-    hint.className = "ipa"; hint.textContent = s.hint;
-    const box = document.createElement("div");
-    box.append(tag, cover, hint); body.append(box);
-  } else if (!revealed) {
-    // 블라인드 퍼스트: 타겟 문장 가리고 시작, 통과 후 공개
-    const cover = document.createElement("p");
-    cover.className = "cover-line";
-    cover.textContent = "🙈 문장이 가려져 있어요. 소리로 먼저 들어보세요";
-    const hints = document.createElement("div");
-    hints.className = "hints";
-    S().chunks.forEach((c, i) => {
-      const h = document.createElement("p");
-      h.innerHTML = `<span>0${i + 1}</span>`;
-      h.append(document.createTextNode(c.hint || c.text));
-      hints.append(h);
-    });
-    body.append(cover, hints);
-  } else if (state.step !== null && steps[state.step]) {
-    const s = steps[state.step];
-    const tag = document.createElement("div");
-    tag.innerHTML = `<span class="step-tag">${s.step}</span><span class="kicker">뒤에서부터 연결</span>`;
-    const p = document.createElement("p");
-    p.className = "sentence"; p.style.fontSize = "25px"; p.textContent = s.text;
-    const ipa = document.createElement("p");
-    ipa.className = "ipa"; ipa.textContent = s.ipa;
-    const box = document.createElement("div");
-    box.append(tag, p, ipa); body.append(box);
-  } else {
-    const p = document.createElement("p");
-    p.className = "sentence"; p.textContent = S().text;
-    const hints = document.createElement("div");
-    hints.className = "hints";
-    S().chunks.forEach((c, i) => {
-      const h = document.createElement("p");
-      h.innerHTML = `<span>0${i + 1}</span>`;
-      h.append(document.createTextNode(c.hint || c.text));
-      hints.append(h);
-    });
-    body.append(p, hints);
-  }
 
   const grid = $("tone-grid");
   grid.innerHTML = "";
@@ -293,7 +234,7 @@ function renderForm() {
     b.className = `pick${i === state.sentence ? " is-on" : ""}`;
     b.textContent = `문장 0${i + 1}`;
     b.title = item.text;
-    b.addEventListener("click", () => { state.sentence = i; state.pass = 0; state.step = null; state.didPlay = false; state.didTrain = false; state.peeked = false; if (state.mode !== "idle") { stopRec(); state.mode = "idle"; } render(); });
+    b.addEventListener("click", () => { state.sentence = i; state.pass = 0; state.step = null; state.didPlay = false; state.didTrain = false; if (state.mode !== "idle") { stopRec(); state.mode = "idle"; } render(); });
     picker.append(b);
   });
   const full = document.createElement("p");
@@ -501,7 +442,7 @@ function resetSession() {
   if (audioCtx && audioCtx.state !== "closed") audioCtx.close().catch(() => undefined);
   audioCtx = null;
   state.mode = "idle"; state.pass = 0; state.step = null; state.tone = null;
-  state.didPlay = false; state.didTrain = false; state.peeked = false;
+  state.didPlay = false; state.didTrain = false;
   state.fallback = false; state.audioReady = false;
   say("화면을 한 번 터치해 소리를 깨워주세요");
   render();
@@ -694,7 +635,7 @@ $("btn-train").addEventListener("click", () => { if (!busy()) void trainBackward
 $("btn-test").addEventListener("click", () => { if (!busy()) void beginTest(); });
 $("btn-reset").addEventListener("click", resetSession);
 $("btn-manual").addEventListener("click", () => void registerPass());
-$("btn-peek").addEventListener("click", () => { state.peeked = true; say("글로 확인했어요. 소리로 다시 외워보세요"); render(); });
+$("btn-go-import").addEventListener("click", () => showView("me"));
 document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
 $("btn-get-expressions").addEventListener("click", () => void loadBundled(true));
 $("set-slow").addEventListener("click", () => { state.slow = !state.slow; render(); });

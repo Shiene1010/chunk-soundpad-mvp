@@ -24,7 +24,8 @@
 - [x] 원본 포팅 (ayoung-ilgchunksoundpad → 정적 MVP)
 - [x] MiniMorph 스캐폴딩 (AGENTS.md, .env, scanner.py, git)
 - [x] D1, D2, D3, D4
-- [x] Speak-once 5변경: 순서 PLAY→TEST→TRAIN, "틀려도 돼요", 첫 패스 축제+기록, 형태 엿보기(👀 글자로 확인하기), 기록 저장소(`cspm-stats-v1`)
+- [x] Speak-once 5변경: 순서 PLAY→TEST→TRAIN, "틀려도 돼요", 첫 패스 축제+기록, 형태 상시 개방(형태 탭), 기록 저장소(`cspm-stats-v1`)
+- [x] 듣기연습 타겟보드 제거: 소리 탭은 소리만. 훈련 스텝은 cue 한 줄, 빈 상태는 CTA (D15)
 - [x] 4탭: 듣기연습/형태/기록/내정보 + 탭바 + 뷰 라우터 + 문장 선택기 + 라이브러리 임포트 + 느리게/안내음성 설정
 - [x] GitHub Pages 배포 (`https://shiene1010.github.io/chunk-soundpad-mvp/`, main 루트, `.nojekyll`)
 

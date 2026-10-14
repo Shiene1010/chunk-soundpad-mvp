@@ -38,7 +38,10 @@ h1 { font-size: 18px; margin-top: 4px; }
 .dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; font-family: monospace; font-size: 9px; color: #999; }
 .pass-dot { width: 22px; height: 22px; border-radius: 50%; background: transparent; border: 2px solid #555; }
 .pass-dot.is-complete { border-color: #7dd3a8; background: radial-gradient(circle, #7dd3a8 0 6px, transparent 7px); }
-.cmd3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+#view-listen { display: flex; flex-direction: column; flex: 1 0 auto; }
+.orb-zone { flex: 1 0 auto; justify-content: center; }
+#cmd3-wrap { margin-top: auto; }
+.cmd3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
 .cmd3 .cmd-btn { align-items: flex-start; justify-content: center; gap: 4px; }
 .cmd-btn b { display: block; font-size: 12px; line-height: 1.35; }
 .cmd-btn i { display: block; font-style: normal; font-size: 10px; color: #999; margin-top: 4px; }
@@ -75,8 +78,8 @@ h1 { font-size: 18px; margin-top: 4px; }
 .view-head h2 { font-size: 18px; color: #fff; }
 .view-sub { font-size: 12px; color: #777; margin: 4px 0 16px; }
 .tabbar { position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(18,18,20,.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-top: 1px solid #2a2a30; margin: 20px -20px -28px; padding: 8px 4px calc(8px + env(safe-area-inset-bottom)); }
-.tab { position: relative; background: none; border: none; color: #666; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; padding: 6px 0; cursor: pointer; }
-.tab-icon { font-size: 22px; }
+.tab { position: relative; background: none; border: none; color: #666; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 10px; padding: 8px 0 6px; cursor: pointer; line-height: 1.2; }
+.tab-icon { font-size: 24px; line-height: 1; }
 .tab.active { color: #2ecc71; font-weight: 700; }
 .tab-badge { position: absolute; top: 0; right: calc(50% - 26px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #ff453a; color: #fff; font-size: 10px; font-weight: 800; display: grid; place-items: center; }
 .tab-badge.done { background: #2ecc71; }

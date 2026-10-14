@@ -17,12 +17,12 @@
 - [x] 원본 포팅 (ayoung-ilgchunksoundpad → 정적 MVP)
 - [x] MiniMorph 스캐폴딩 (AGENTS.md, .env, scanner.py, git)
 - [x] D1, D2, D3, D4
+- [x] Speak-once 5변경: 순서 PLAY→TEST→TRAIN, "틀려도 돼요", 첫 패스 축제+기록, 형태 엿보기(👀 글자로 확인하기), 기록 저장소(`cspm-stats-v1`)
 - [x] GitHub 푸시 (`main`, .env 미추적)
 
 ## 3. 승인 대기 (스펙 완료)
 
 - [ ] **TTS 안내 시나리오**: 상태별 한국어 대사 + 반복 억제(세션 1회, 이후 단축형).
-- [ ] **Speak-once 5변경**: 순서 PLAY→TEST→TRAIN, "틀려도 돼요" 문구, 첫 패스 축제, 형태 상시 개방, 기록에 첫말하기 뱃지.
 - [ ] **iOS 패턴 적용**: `<dialog>` 시트/커버, `startViewTransition` 전환, dvh/safe-area/reduced-motion.
 - [ ] **4탭 구현**: 탭바 + 뷰 라우터 + M1/M2 리스킨 → M3 → M4 → M5 순.
 - [ ] **역순 매트릭스** `[3,2,1]` + 스텝 카운터.

@@ -60,6 +60,7 @@ h1 { font-size: 18px; margin-top: 4px; }
 .cmd-btn.is-done .step-badge::after { content: "✓"; font-size: 13px; }
 @keyframes nextPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(125,211,168,.0); } 50% { box-shadow: 0 0 0 3px rgba(125,211,168,.35); } }
 .manual { margin-top: 12px; width: 100%; border: 1px dashed rgba(255,184,0,.6); background: rgba(255,184,0,.08); color: #ffb800; padding: 12px; font-size: 14px; cursor: pointer; }
+.peek { margin-top: 10px; width: 100%; background: none; border: none; color: #666; font-size: 12px; text-decoration: underline; cursor: pointer; }
 .tones { margin-top: 24px; border-top: 1px solid #2a2a30; padding-top: 20px; }
 .tones-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .tones-head h2 { font-size: 14px; margin-top: 4px; }

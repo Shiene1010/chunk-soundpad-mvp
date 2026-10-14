@@ -31,7 +31,11 @@ const PATTERNS = [
 ];
 const WHISPERS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
-const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false, didPlay: false, didTrain: false };
+const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false, didPlay: false, didTrain: false, peeked: false };
+// 북극성 지표 저장소 (기록 탭 재료): firstPassAt, totalPasses, sessions
+const STATS_KEY = "cspm-stats-v1";
+function loadStats() { try { return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch { return {}; } }
+function saveStats(s) { try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch { /* private mode */ } }
 let audioCtx = null;
 let rec = null;
 let restarting = false;
@@ -114,6 +118,7 @@ async function startSession(skipMic = false) {
   const granted = skipMic ? false : await requestMic();
   $("start-overlay").classList.add("hidden");
   state.started = true;
+  const st0 = loadStats(); st0.sessions = (st0.sessions || 0) + 1; saveStats(st0);
   if (!granted) state.fallback = true;
   if (state.noTts) say("이 브라우저는 소리 재생이 안 돼요. 글을 보고 연습하세요.");
   else if (!granted) say("마이크가 안 돼서 버튼으로 인증하세요.");
@@ -148,13 +153,14 @@ function render() {
   $("btn-play").classList.toggle("is-active", state.mode === "tts" && state.step === null);
   $("btn-train").classList.toggle("is-active", state.mode === "train");
   $("btn-test").classList.toggle("is-active", state.mode === "stt");
-  // 흐름 안내: 완료→✓, 다음 행동→펄스. 잠그지 않고 권장만 표시
-  const nextCmd = !state.didPlay ? "btn-play" : !state.didTrain ? "btn-train" : (!isMastered ? "btn-test" : null);
+  // 흐름 안내: 듣기→말하기→연결. 잠그지 않고 권장만 표시
+  const nextCmd = !state.didPlay ? "btn-play" : state.pass === 0 ? "btn-test" : !state.didTrain ? "btn-train" : (!isMastered ? "btn-test" : null);
   ["btn-play", "btn-train", "btn-test"].forEach((id) => $(id).classList.toggle("is-next", id === nextCmd));
   $("btn-play").classList.toggle("is-done", state.didPlay);
   $("btn-train").classList.toggle("is-done", state.didTrain);
   $("btn-test").classList.toggle("is-done", isMastered);
   $("btn-manual").classList.toggle("hidden", state.mode !== "stt");
+  $("btn-peek").classList.toggle("hidden", revealed);
   $("tone-lock").textContent = isMastered ? "✨" : "🔒";
   $("tone-note").style.display = isMastered ? "none" : "";
   $("cafe-link").classList.toggle("hidden", !isMastered);
@@ -174,7 +180,7 @@ function render() {
   const body = $("board-body");
   body.innerHTML = "";
   const steps = backwardSteps();
-  const revealed = state.noTts || state.pass >= 6 || state.mode === "mastered";
+  const revealed = state.noTts || state.peeked || state.pass >= 6 || state.mode === "mastered";
   if (!revealed && state.step !== null && steps[state.step]) {
     // 블라인드 퍼스트: 훈련 중에도 영어 텍스트·IPA 미공개, 단계+한글 힌트만
     const s = steps[state.step];
@@ -252,8 +258,14 @@ function say(msg) { $("heard").textContent = msg; }
 async function registerPass() {
   if (state.pass >= 6) return;
   state.pass += 1;
-  say(`${state.pass}번째 소리를 받았어요`);
+  const st = loadStats();
+  st.totalPasses = (st.totalPasses || 0) + 1;
+  if (!st.firstPassAt) st.firstPassAt = new Date().toISOString();
+  saveStats(st);
+  const first = state.pass === 1;
+  say(first ? "🎉 첫 소리 성공! 틀려도 잘했어요" : `${state.pass}번째 소리를 받았어요`);
   render();
+  if (first) await seq([392, 523.25, 659.25], 120, 0.12); // 첫 발화 전용 팡파레 (TTS 아님: 자기인식 방지)
   await tone(1046.5, 300, 0.14);
   const w = WHISPERS[state.pass - 1];
   if (w) await speak(w, { pitch: 0.9, rate: 0.74, volume: 0.45 });
@@ -339,7 +351,7 @@ async function trainBackward() {
 async function beginTest() {
   stopRec();
   state.mode = "stt"; state.step = null;
-  say("문장은 가렸어요. 귀에 들린 리듬으로 말해보세요"); render();
+  say("틀려도 돼요. 들은 대로 말해보세요"); render();
   await ensureAudio(); await delay(300);
   await seq([880, 1200], 40, 0.1);
   startTestRec();
@@ -353,7 +365,7 @@ function resetSession() {
   if (audioCtx && audioCtx.state !== "closed") audioCtx.close().catch(() => undefined);
   audioCtx = null;
   state.mode = "idle"; state.pass = 0; state.step = null; state.tone = null;
-  state.didPlay = false; state.didTrain = false;
+  state.didPlay = false; state.didTrain = false; state.peeked = false;
   state.fallback = false; state.audioReady = false;
   say("화면을 한 번 터치해 소리를 깨워주세요");
   render();
@@ -420,6 +432,7 @@ $("btn-train").addEventListener("click", () => { if (!busy()) void trainBackward
 $("btn-test").addEventListener("click", () => { if (!busy()) void beginTest(); });
 $("btn-reset").addEventListener("click", resetSession);
 $("btn-manual").addEventListener("click", () => void registerPass());
+$("btn-peek").addEventListener("click", () => { state.peeked = true; say("글로 확인했어요. 소리로 다시 외워보세요"); render(); });
 $("app").addEventListener("pointerdown", () => { if (!state.audioReady) void ensureAudio(); });
 // 화면 꺼짐·전화 수신 시 인식 중단, 복귀 시 stt면 재개
 document.addEventListener("visibilitychange", () => {

@@ -24,6 +24,7 @@ const SENTENCES = [
 
 const COMMAND_TEXT = { idle: "Let's play it now", tts: "재생 중입니다", train: "Let's train it now", stt: "문장을 소리 내어 말해보세요", mastered: "아래 5가지 톤을 눌러보세요" };
 const LABELS = { idle: "학습자 명령어 듣기 대기중...", tts: "티티엣이 말한다...", train: "뒤에서부터 소리를 잇는 중...", stt: "안 보고 말하기 테스트 중...", mastered: "여섯 번의 소리가 연결됐어요" };
+const VIEW_TITLES = { listen: "듣기연습", form: "형태", history: "기록", me: "내정보" };
 const PATTERNS = [
   { command: "play", pattern: /\b(pl[ae]y|플레이|pray|plei)\b/ },
   { command: "train", pattern: /\b(tr[ae]in|트레인|drain|crain)\w*\b/ },
@@ -31,11 +32,7 @@ const PATTERNS = [
 ];
 const WHISPERS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
-const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false, didPlay: false, didTrain: false, peeked: false };
-// 북극성 지표 저장소 (기록 탭 재료): firstPassAt, totalPasses, sessions
-const STATS_KEY = "cspm-stats-v1";
-function loadStats() { try { return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch { return {}; } }
-function saveStats(s) { try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch { /* private mode */ } }
+const state = { mode: "idle", pass: 0, step: null, tone: null, sentence: 0, audioReady: false, listening: false, fallback: false, started: false, guided: false, noTts: false, didPlay: false, didTrain: false, peeked: false, view: "listen", slow: false, guideVoice: true };
 let audioCtx = null;
 let rec = null;
 let restarting = false;
@@ -43,9 +40,19 @@ let restarting = false;
 const err = { nospeech: 0, net: 0 };
 // TTS 자기 목소리 오인식 방지: 앱이 말한 단어는 패스로 치지 않음
 const SELF_VOICE = ["one", "two", "three", "four", "five", "six", "well done", "well done you did it"];
+// 북극성 지표 저장소 (기록 탭 재료): firstPassAt, totalPasses, sessions
+const STATS_KEY = "cspm-stats-v1";
+const PACKS_KEY = "cspm-packs-v1";
+function loadStats() { try { return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch { return {}; } }
+function saveStats(s) { try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch { /* private mode */ } }
+function loadPacks() { try { const p = JSON.parse(localStorage.getItem(PACKS_KEY)); return Array.isArray(p) ? p : []; } catch { return []; } }
+function savePacks(p) { try { localStorage.setItem(PACKS_KEY, JSON.stringify(p)); } catch { /* private mode */ } }
+let PACKS = [];
+try { PACKS = loadPacks(); } catch { PACKS = []; }
+const ALL = () => SENTENCES.concat(PACKS);
 
 const $ = (id) => document.getElementById(id);
-const S = () => SENTENCES[state.sentence];
+const S = () => ALL()[state.sentence] || SENTENCES[0];
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function matchCommand(t) {
@@ -94,7 +101,7 @@ function speak(text, { pitch = 1, rate = 0.92, volume = 1 } = {}) {
     if (!("speechSynthesis" in window)) return resolve();
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    // 한글 안내는 한국어 음성으로, 영어 문장은 영어 음성으로 (고정 en-US가 괴상한 발음의 원인)
+    // 한글 안내는 한국어 음성으로, 영어 문장은 영어 음성으로
     u.lang = /[가-힣]/.test(text) ? "ko-KR" : "en-US";
     u.pitch = pitch; u.rate = rate; u.volume = volume;
     u.onend = () => resolve(); u.onerror = () => resolve();
@@ -126,7 +133,7 @@ async function startSession(skipMic = false) {
   else if (!granted) say("마이크가 안 돼서 버튼으로 인증하세요.");
   else say("준비됐어요. 아래 명령을 누르거나 직접 말해보세요");
   render();
-  if (!state.guided && !state.noTts) {
+  if (!state.guided && !state.noTts && state.guideVoice) {
     state.guided = true;
     if (granted) await speak("준비됐어요. 문장은 가려져 있어요. 먼저 소리로 들어보세요.");
     else await speak("마이크가 안 돼서 버튼으로 인증하세요.");
@@ -139,9 +146,23 @@ function stopRec() {
   rec = null;
 }
 
+function showView(v) {
+  state.view = v;
+  const apply = () => render();
+  if (document.startViewTransition) { try { document.startViewTransition(apply); return; } catch { /* fallback */ } }
+  apply();
+}
+
 function render() {
   const isMastered = state.pass >= 6 || state.mode === "mastered";
   const revealed = state.noTts || state.peeked || state.pass >= 6 || state.mode === "mastered";
+  $("view-title").textContent = VIEW_TITLES[state.view] || "듣기연습";
+  document.querySelectorAll(".view").forEach((s) => s.classList.toggle("hidden", s.id !== "view-" + state.view));
+  document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.view === state.view));
+  if (state.view === "form") renderForm();
+  if (state.view === "history") renderHistory();
+  if (state.view === "me") renderMe();
+  if (state.view !== "listen") return;
   $("cmd-text").textContent = `“${COMMAND_TEXT[state.mode]}”`;
   $("cue-text").textContent = !isMastered && state.mode === "idle" ? "🙈 문장은 가려져 있어요. 소리로 먼저 들어보세요:" : state.mode === "idle" ? "🗣️ 위 문장 전체 소리를 들으려면 이렇게 말해보세요:" : "🎧 지금은 이 안내를 따라가세요:";
   $("guidance").style.display = isMastered ? "none" : "";
@@ -205,7 +226,7 @@ function render() {
     S().chunks.forEach((c, i) => {
       const h = document.createElement("p");
       h.innerHTML = `<span>0${i + 1}</span>`;
-      h.append(document.createTextNode(c.hint));
+      h.append(document.createTextNode(c.hint || c.text));
       hints.append(h);
     });
     body.append(cover, hints);
@@ -227,7 +248,7 @@ function render() {
     S().chunks.forEach((c, i) => {
       const h = document.createElement("p");
       h.innerHTML = `<span>0${i + 1}</span>`;
-      h.append(document.createTextNode(c.hint));
+      h.append(document.createTextNode(c.hint || c.text));
       hints.append(h);
     });
     body.append(p, hints);
@@ -235,7 +256,7 @@ function render() {
 
   const grid = $("tone-grid");
   grid.innerHTML = "";
-  S().tones.forEach((t) => {
+  (S().tones || []).forEach((t) => {
     const b = document.createElement("button");
     b.type = "button"; b.disabled = !isMastered;
     b.className = `tone-button${state.tone === t.key ? " is-active" : ""}`;
@@ -246,11 +267,86 @@ function render() {
   });
 }
 
+function renderForm() {
+  const s = S();
+  const picker = $("sentence-picker");
+  picker.innerHTML = "";
+  ALL().forEach((item, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `pick${i === state.sentence ? " is-on" : ""}`;
+    b.textContent = `문장 0${i + 1}`;
+    b.title = item.text;
+    b.addEventListener("click", () => { state.sentence = i; state.pass = 0; state.step = null; state.didPlay = false; state.didTrain = false; state.peeked = false; if (state.mode !== "idle") { stopRec(); state.mode = "idle"; } render(); });
+    picker.append(b);
+  });
+  const box = $("form-cards");
+  box.innerHTML = "";
+  const full = document.createElement("p");
+  full.className = "form-full"; full.textContent = s.text;
+  box.append(full);
+  s.chunks.forEach((c, i) => {
+    const card = document.createElement("button");
+    card.type = "button"; card.className = "form-card";
+    card.innerHTML = `<span class="step-badge">0${i + 1}</span>`;
+    const t = document.createElement("p"); t.className = "form-text"; t.textContent = c.text;
+    const ipa = document.createElement("p"); ipa.className = "ipa"; ipa.textContent = c.ipa || "";
+    const hint = document.createElement("p"); hint.className = "form-hint"; hint.textContent = c.hint || "";
+    card.append(t, ipa, hint);
+    card.addEventListener("click", () => void speak(c.text, { rate: state.slow ? 0.65 : 0.85 }));
+    box.append(card);
+  });
+}
+
+function renderHistory() {
+  const st = loadStats();
+  const box = $("history-body");
+  box.innerHTML = "";
+  const rows = [
+    ["첫 말하기", st.firstPassAt ? new Date(st.firstPassAt).toLocaleString() + " 🎉" : "아직 없어요. 첫 소리를 내보세요"],
+    ["통산 발화", String(st.totalPasses || 0) + "회"],
+    ["세션", String(st.sessions || 0) + "회"],
+  ];
+  rows.forEach(([k, v]) => {
+    const r = document.createElement("div"); r.className = "hist-row";
+    const a = document.createElement("span"); a.textContent = k;
+    const b = document.createElement("b"); b.textContent = v;
+    r.append(a, b); box.append(r);
+  });
+}
+
+function renderMe() {
+  const slow = $("set-slow"), guide = $("set-guide");
+  slow.textContent = state.slow ? "켬" : "끔";
+  slow.setAttribute("aria-pressed", String(state.slow));
+  guide.textContent = state.guideVoice ? "켬" : "끔";
+  guide.setAttribute("aria-pressed", String(state.guideVoice));
+  const list = $("pack-list");
+  list.innerHTML = "";
+  if (PACKS.length === 0) {
+    const p = document.createElement("p"); p.className = "tone-note"; p.textContent = "가져온 표현이 없어요";
+    list.append(p);
+  }
+  PACKS.forEach((p, i) => {
+    const r = document.createElement("div"); r.className = "hist-row";
+    const a = document.createElement("span"); a.textContent = (p.text || "").slice(0, 28) + "…";
+    const del = document.createElement("button"); del.type = "button"; del.className = "peek"; del.textContent = "삭제";
+    del.addEventListener("click", () => {
+      PACKS.splice(i, 1); savePacks(PACKS);
+      if (state.sentence >= SENTENCES.length + PACKS.length) state.sentence = 0;
+      render();
+    });
+    r.append(a, del); list.append(r);
+  });
+}
+
 function backwardSteps() {
   const s = S();
+  const n = s.chunks.length;
+  const last = s.chunks[n - 1], prev = s.chunks[n - 2];
   return [
-    { text: s.chunks[2].text, ipa: s.chunks[2].ipa, step: "01", hint: s.chunks[2].hint },
-    { text: `${s.chunks[1].text} ${s.chunks[2].text}`, ipa: `${s.chunks[1].ipa} ${s.chunks[2].ipa}`, step: "02", hint: `${s.chunks[1].hint} + ${s.chunks[2].hint}` },
+    { text: last.text, ipa: last.ipa, step: "01", hint: last.hint },
+    { text: `${prev ? prev.text + " " : ""}${last.text}`, ipa: `${prev ? (prev.ipa || "") + " " : ""}${last.ipa || ""}`, step: "02", hint: `${prev ? prev.hint + " + " : ""}${last.hint}` },
     { text: s.text, ipa: s.ipa, step: "03", hint: "전체 문장 소리" },
   ];
 }
@@ -332,7 +428,7 @@ async function playSentence() {
   state.mode = "tts"; state.step = null; say("전체 문장을 들려드릴게요"); render();
   await ensureAudio(); await delay(500);
   await seq([261.63, 329.63, 392], 100);
-  await speak(S().text);
+  await speak(S().text, { rate: state.slow ? 0.65 : 0.92 });
   state.didPlay = true;
   state.mode = "idle"; say("다시 듣거나, 뒤에서부터 연결해 보세요"); render();
 }
@@ -343,7 +439,7 @@ async function trainBackward() {
   const steps = backwardSteps();
   for (let i = 0; i < steps.length; i++) {
     state.step = i; render();
-    await speak(steps[i].text);
+    await speak(steps[i].text, { rate: state.slow ? 0.7 : 0.92 });
     if (i < steps.length - 1) { await heartbeat(); await delay(1200); }
   }
   state.didTrain = true;
@@ -426,6 +522,23 @@ function busy() {
   return false;
 }
 
+function importPack() {
+  const msg = $("import-msg");
+  let obj;
+  try { obj = JSON.parse($("import-text").value); }
+  catch { msg.textContent = "JSON 파싱 실패. 형식을 확인하세요"; return; }
+  if (!obj || typeof obj.text !== "string" || !Array.isArray(obj.chunks) || obj.chunks.length === 0 || !obj.chunks.every((c) => c && typeof c.text === "string")) {
+    msg.textContent = "필요: {text, chunks:[{text}]} (hint·ipa 선택)";
+    return;
+  }
+  obj.id = "pack_" + Date.now();
+  obj.tones = obj.tones || [];
+  PACKS.push(obj); savePacks(PACKS);
+  $("import-text").value = "";
+  msg.textContent = `가져옴: 문장 0${SENTENCES.length + PACKS.length}`;
+  render();
+}
+
 $("btn-start").addEventListener("click", () => void startSession(false));
 $("btn-skip").addEventListener("click", () => void startSession(true));
 $("orb").addEventListener("pointerdown", handleOrbTap);
@@ -435,6 +548,11 @@ $("btn-test").addEventListener("click", () => { if (!busy()) void beginTest(); }
 $("btn-reset").addEventListener("click", resetSession);
 $("btn-manual").addEventListener("click", () => void registerPass());
 $("btn-peek").addEventListener("click", () => { state.peeked = true; say("글로 확인했어요. 소리로 다시 외워보세요"); render(); });
+document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
+$("set-slow").addEventListener("click", () => { state.slow = !state.slow; render(); });
+$("set-guide").addEventListener("click", () => { state.guideVoice = !state.guideVoice; render(); });
+$("btn-import").addEventListener("click", importPack);
+$("btn-clear-stats").addEventListener("click", () => { try { localStorage.removeItem(STATS_KEY); } catch { /* noop */ } render(); });
 $("app").addEventListener("pointerdown", () => { if (!state.audioReady) void ensureAudio(); });
 // 화면 꺼짐·전화 수신 시 인식 중단, 복귀 시 stt면 재개
 document.addEventListener("visibilitychange", () => {

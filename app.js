@@ -187,8 +187,8 @@ function render() {
   $("btn-play").classList.toggle("is-active", state.mode === "tts" && state.step === null);
   $("btn-train").classList.toggle("is-active", state.mode === "train");
   $("btn-test").classList.toggle("is-active", state.mode === "stt");
-  // 흐름 안내: 듣기→말하기→연결. 잠그지 않고 권장만 표시
-  const nextCmd = !state.didPlay ? "btn-play" : state.pass === 0 ? "btn-test" : !state.didTrain ? "btn-train" : (!isMastered ? "btn-test" : null);
+  // 흐름 안내: 듣기→연결→말하기(D17). 잠그지 않고 권장만 표시
+  const nextCmd = !state.didPlay ? "btn-play" : !state.didTrain ? "btn-train" : (!isMastered ? "btn-test" : null);
   ["btn-play", "btn-train", "btn-test"].forEach((id) => $(id).classList.toggle("is-next", id === nextCmd));
   $("btn-play").classList.toggle("is-done", state.didPlay);
   $("btn-train").classList.toggle("is-done", state.didTrain);

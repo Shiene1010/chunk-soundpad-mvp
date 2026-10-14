@@ -139,6 +139,7 @@ function stopRec() {
 
 function render() {
   const isMastered = state.pass >= 6 || state.mode === "mastered";
+  const revealed = state.noTts || state.peeked || state.pass >= 6 || state.mode === "mastered";
   $("cmd-text").textContent = `“${COMMAND_TEXT[state.mode]}”`;
   $("cue-text").textContent = !isMastered && state.mode === "idle" ? "🙈 문장은 가려져 있어요. 소리로 먼저 들어보세요:" : state.mode === "idle" ? "🗣️ 위 문장 전체 소리를 들으려면 이렇게 말해보세요:" : "🎧 지금은 이 안내를 따라가세요:";
   $("guidance").style.display = isMastered ? "none" : "";
@@ -180,7 +181,6 @@ function render() {
   const body = $("board-body");
   body.innerHTML = "";
   const steps = backwardSteps();
-  const revealed = state.noTts || state.peeked || state.pass >= 6 || state.mode === "mastered";
   if (!revealed && state.step !== null && steps[state.step]) {
     // 블라인드 퍼스트: 훈련 중에도 영어 텍스트·IPA 미공개, 단계+한글 힌트만
     const s = steps[state.step];

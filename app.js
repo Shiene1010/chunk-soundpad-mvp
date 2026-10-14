@@ -644,11 +644,30 @@ function downloadJSON(name, obj) {
 async function addLibraryEntries(entries, label) {
   let added = 0;
   for (const e of entries) {
-    if (!PACKS.some((x) => x.text === e.text)) { PACKS.push(e); added++; }
+    if (!ALL().some((x) => x.text === e.text)) { PACKS.push(e); added++; }
   }
   if (added) { savePacks(PACKS); showToast(added + "개 가져옴" + (label ? ": " + label : "")); }
   else showToast("이미 있어요");
   render();
+}
+
+const BUNDLED_LIB = "expressions/library.clib.json";
+
+async function loadBundled(manual = false) {
+  try {
+    const r = await fetch(BUNDLED_LIB);
+    if (!r.ok) throw 0;
+    const lib = JSON.parse(await r.text());
+    const bad = validateLibrary(lib);
+    if (bad) { if (manual) showToast(bad); return; }
+    const ierr = await verifyLibrary(lib);
+    if (ierr) { if (manual) showToast(ierr); return; }
+    const fresh = lib.entries.filter((e) => !ALL().some((x) => x.text === e.text));
+    if (!fresh.length) { if (manual) showToast("최신 상태"); return; }
+    PACKS.push(...fresh); savePacks(PACKS);
+    if (manual) showToast(fresh.length + "개 가져옴");
+    render();
+  } catch { if (manual) showToast("폴더 읽기 실패"); }
 }
 
 async function loadPreset(url) {

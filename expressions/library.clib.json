@@ -1,0 +1,34 @@
+{
+  "format": "chunk-soundpad-library",
+  "version": 1,
+  "name": "target-01",
+  "title": "타겟표현01",
+  "created": "2026-10-14T10:53:58.349Z",
+  "entries": [
+    {
+      "id": "roald_dahl_chunk_01",
+      "level": "beginner",
+      "text": "I would have been able to make it into a grubber all over again.",
+      "ipa": "[aɪ wʊd həv bɪn ˈeɪbəl tu meɪk ɪt ˈɪntu ə ˈɡrʌbər ɔːl ˈoʊvər əˈɡen]",
+      "chunks": [
+        {
+          "text": "I would have been able to",
+          "ipa": "[aɪ wʊd həv bɪn ˈeɪbəl tu]",
+          "hint": "내가 ~할 수 있었을 텐데 (호흡 시작 마디)"
+        },
+        {
+          "text": "make it into a grubber",
+          "ipa": "[meɪk ɪt ˈɪntu ə ˈɡrʌbər]",
+          "hint": "그것을 제과점으로 변모시키는 것을 (동사부 연결마디)"
+        },
+        {
+          "text": "all over again.",
+          "ipa": "[ɔːl ˈoʊvər əˈɡen]",
+          "hint": "처음부터 완전히 다시 (억양 매듭마디)"
+        }
+      ],
+      "tones": []
+    }
+  ],
+  "sha256": "6c1aba89da7f09be1e76321fe84eb6ed9374b05f41c043e47fe11e5bf05dcb6f"
+}

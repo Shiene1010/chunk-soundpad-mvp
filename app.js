@@ -541,7 +541,7 @@ function busy() {
   return false;
 }
 
-// 표현 MD 파서: gray-matter/Jekyll 규격(--- 펜스 + # 문장 + > IPA + ## 덩어리)
+// 표현 MD 파서 (앱 내 미사용 — expressions/ 봉인 빌드(node eval)와 공유)
 function parseMD(src) {
   const lines = String(src).replace(/\r\n?/g, "\n").split("\n");
   let i = 0;
@@ -622,25 +622,6 @@ async function verifyLibrary(obj) {
   return hex === obj.sha256 ? null : "무결성 불일치";
 }
 
-function buildLibrary(name, entries) {
-  return { format: LIB_FORMAT, version: LIB_VERSION, name, title: name, created: new Date().toISOString(), entries };
-}
-
-async function sealLibrary(lib) {
-  const hex = await sha256hex(canonicalEntries(lib.entries));
-  if (hex) lib.sha256 = hex;
-  return lib;
-}
-
-function downloadJSON(name, obj) {
-  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.append(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-}
-
 async function addLibraryEntries(entries, label) {
   let added = 0;
   for (const e of entries) {
@@ -670,57 +651,6 @@ async function loadBundled(manual = false) {
   } catch { if (manual) showToast("폴더 읽기 실패"); }
 }
 
-function importPack() {
-  const msg = $("import-msg");
-  const raw = $("import-text").value.trim();
-  let obj = null;
-  if (raw.startsWith("---")) {
-    // 직접 MD 금지: 라이브러리로 묶어서 가져오기
-    msg.textContent = "MD 직접 임포트 중단. 아래 'MD 묶어서 다운로드' 후 clib 파일로 가져오세요";
-    showToast("라이브러리 형식만 가능");
-    return;
-  }
-  try { obj = JSON.parse(raw); }
-  catch { msg.textContent = "JSON 파싱 실패. 형식을 확인하세요"; showToast("JSON 파싱 실패"); return; }
-  importLibraryObject(obj, msg);
-}
-
-async function importLibraryObject(obj, msg) {
-  if (obj && validPack(obj) && !obj.format) {
-    // 직접 팩 JSON 금지
-    msg.textContent = "낱팩 직접 임포트 중단. 라이브러리(.clib.json)로 묶어서 가져오세요";
-    showToast("라이브러리 형식만 가능");
-    return;
-  }
-  const bad = validateLibrary(obj);
-  if (bad) { msg.textContent = bad; showToast(bad); return; }
-  const ierr = await verifyLibrary(obj);
-  if (ierr) { msg.textContent = ierr; showToast(ierr); return; }
-  $("import-text").value = "";
-  msg.textContent = `가져옴: ${obj.title || obj.name} (${obj.entries.length}개)`;
-  await addLibraryEntries(obj.entries, obj.title || obj.name);
-}
-
-// MD → 라이브러리 변환기 (작성 워크플로 유지, 출입구는 clib로)
-async function wrapMDToLibrary() {
-  const msg = $("import-msg");
-  const raw = $("import-text").value.trim();
-  if (!raw.startsWith("---")) { msg.textContent = "MD를 붙여넣으세요(---로 시작)"; showToast("MD가 아니에요"); return; }
-  const p = parseMD(raw);
-  if (!validPack(p)) { msg.textContent = "MD 파싱 실패"; showToast("MD 파싱 실패"); return; }
-  const lib = await sealLibrary(buildLibrary(p.id || "custom", [p]));
-  downloadJSON((p.id || "custom") + ".clib.json", lib);
-  msg.textContent = "라이브러리로 묶어 다운로드함. 파일 선택으로 가져오세요";
-  showToast("묶음 완료");
-}
-
-async function exportLibrary() {
-  if (!PACKS.length) { showToast("내보낼 표현이 없어요"); return; }
-  const lib = await sealLibrary(buildLibrary("my-expressions", PACKS));
-  downloadJSON("my-expressions.clib.json", lib);
-  showToast("내보내기 완료");
-}
-
 $("btn-start").addEventListener("click", () => void startSession(false));
 $("btn-skip").addEventListener("click", () => void startSession(true));
 $("orb").addEventListener("pointerdown", handleOrbTap);
@@ -731,28 +661,9 @@ $("btn-reset").addEventListener("click", resetSession);
 $("btn-manual").addEventListener("click", () => void registerPass());
 $("btn-peek").addEventListener("click", () => { state.peeked = true; say("글로 확인했어요. 소리로 다시 외워보세요"); render(); });
 document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
-$("btn-reload-lib").addEventListener("click", () => void loadBundled(true));
-$("file-md").addEventListener("change", (e) => {
-  const files = Array.from(e.target.files || []).filter((f) => /\.clib\.json$/i.test(f.name));
-  if (!files.length) { showToast("라이브러리(.clib.json)만 가능"); e.target.value = ""; return; }
-  if (files.length > 1) { showToast("한 번에 1개씩"); e.target.value = ""; return; }
-  const f = files[0];
-  if (f.size > LIB_MAX_BYTES) { showToast("200KB 이하만"); e.target.value = ""; return; }
-  const r = new FileReader();
-  r.onload = async () => {
-    let obj = null;
-    try { obj = JSON.parse(r.result); } catch { showToast("JSON 파싱 실패"); }
-    if (obj) await importLibraryObject(obj, $("import-msg"));
-    e.target.value = "";
-  };
-  r.onerror = () => { showToast("읽기 실패"); e.target.value = ""; };
-  r.readAsText(f);
-});
-$("btn-wrap-md").addEventListener("click", () => void wrapMDToLibrary());
-$("btn-export-lib").addEventListener("click", () => void exportLibrary());
+$("btn-get-expressions").addEventListener("click", () => void loadBundled(true));
 $("set-slow").addEventListener("click", () => { state.slow = !state.slow; render(); });
 $("set-guide").addEventListener("click", () => { state.guideVoice = !state.guideVoice; render(); });
-$("btn-import").addEventListener("click", importPack);
 $("btn-clear-stats").addEventListener("click", () => { try { localStorage.removeItem(STATS_KEY); } catch { /* noop */ } render(); });
 $("app").addEventListener("pointerdown", () => { if (!state.audioReady) void ensureAudio(); });
 // 화면 꺼짐·전화 수신 시 인식 중단, 복귀 시 stt면 재개

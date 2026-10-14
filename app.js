@@ -168,8 +168,10 @@ function render() {
   $("tap-hint").style.visibility = state.mode === "idle" && !state.listening ? "visible" : "hidden";
   $("pass-num").textContent = String(state.pass);
   $("passes-section").classList.toggle("hidden", !(state.mode === "stt" || state.pass > 0));
-  // 통과 후: 3버튼 자리를 5톤 버튼으로 교체
+  // 통과 후: 카운팅(헤드+도트) 숨기고 5톤만. 3버튼도 숨김
   $("cmd3-wrap").classList.toggle("hidden", isMastered || empty);
+  $("passes-head").classList.toggle("hidden", isMastered);
+  $("dots").classList.toggle("hidden", isMastered);
   $("tone-grid-pass").classList.toggle("hidden", !isMastered);
   const tg = $("tone-grid-pass");
   tg.innerHTML = "";
